@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!--
+        Metadata and Document Settings:
+        - UTF-8 character encoding ensures most characters are displayed correctly.
+        - The viewport meta tag enables responsive design on mobile devices.
+        - The title reflects the West Ham & McLaren theme.
+    -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>West Ham &amp; McLaren Themed Website</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!--
+        Header Section:
+        This part of the page introduces visitors to the website.
+        It includes a welcoming title and placeholder images for the West Ham and McLaren logos.
+    -->
+    <header>
+        <h1>Welcome to My Website</h1>
+        <!--
+            The image sources below are placeholders.
+            Make sure to replace "images/west-ham-logo.png" and "images/mclaren-logo.png"
+            with the actual image paths from your project.
+        -->
+        <img src="images/west-ham-logo.png" alt="West Ham Logo" title="West Ham United Logo">
+        <img src="images/mclaren-logo.png" alt="McLaren Logo" title="McLaren Racing Logo">
+    </header>
+    <nav>
+        <ul>
+            <li><a href="about.html">About</a></li>
+            <li><a href="band-plans.html">Band Plans</a></li>
+            <li><a href="mclaren.html">McLaren</a></li>
+            <li><a href="projects.html">Projects</a></li>
+            <li><a href="west-ham.html">West Ham</a></li>
+        </ul>
+    </nav>
+    <div class="content-wrapper">
+    <!--
+        Main Section:
+        Contains the primary content of the website.
+        This is divided into several sections:
+         - About: Introduces the theme and purpose of the site.
+         - Featured Content: A preview of news and historical content.
+         - Multimedia: A placeholder for interactive or visual content.
+    -->
+    <main>
+        <!-- About Section -->
+        <section id="introduction">
+            <h2>About This Site</h2>
+            <p>
+                This website is dedicated to celebrating two iconic brands:
+                West Ham United in the world of football, and McLaren in the realm of motorsport.
+                Explore the passion, history, and innovation that define both these legends.
+            </p>
+        </section>
+
+        <!-- Featured Content Section -->
+        <section id="features">
+            <h2>Featured Content</h2>
+            <!-- Article for Latest News & Updates -->
+            <article>
+                <h3>Latest News &amp; Updates</h3>
+                <p>
+                    Stay updated with match results, race day highlights, exclusive interviews, and more from both West Ham and McLaren.
+                </p>
+            </article>
+            <!-- Article for Historical Insights -->
+            <article>
+                <h3>History &amp; Legacy</h3>
+                <p>
+                    Dive deep into the rich histories and standout moments that have shaped West Ham United and McLaren Racing.
+                </p>
+            </article>
+        </section>
+
+        <!-- Multimedia Section -->
+        <section id="multimedia">
+            <h2>Multimedia</h2>
+            <p>
+                Enjoy interactive galleries, video highlights, and other dynamic content that bring the excitement
+                of game day and race day to life.
+            </p>
+        </section>
+    </main>
+    <aside class="sidebar">
+        <section id="weather-widget">
+            <h2>Current Weather</h2>
+            <div class="widget-content">
+                <a class="weatherwidget-io" href="https://forecast7.com/en/51d550d71/southend-on-sea/" data-label_1="SOUTHEND-ON-SEA" data-label_2="WEATHER" data-theme="retro-sky" >SOUTHEND-ON-SEA WEATHER</a>
+                <script>
+                    !function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src='https://weatherwidget.io/js/widget.min.js';fjs.parentNode.insertBefore(js,fjs);}}(document,'script','weatherwidget-io-js');
+                </script>
+            </div>
+        </section>
+        <section id="rf-widget">
+            <h2>RF Propagation Conditions</h2>
+            <div class="widget-content">
+                <center>
+                    <a href="https://www.hamqsl.com/solar.html" title="Click to add Solar-Terrestrial Data to your website!"><img src="https://www.hamqsl.com/solarvhf.php"></a>
+                </center>
+            </div>
+        </section>
+    </aside>
+    </div>
+
+    <!--
+        Footer Section:
+        Contains copyright and additional links.
+        Feel free to update or add contact information, social media links, etc.
+    -->
+    <footer>
+        <p>&copy; 2025 West Ham &amp; McLaren Fan Project. All rights reserved.</p>
+    </footer>
+
+    <!--
+        Comments:
+        - This file provides a basic structure that reflects your West Ham/McLaren theme.
+        - Each section is clearly commented for future development and maintenance.
+        - The layout is intentionally kept simple so it can be enhanced with a separate CSS file in the next iteration.
+    -->
+</body>
+</html>

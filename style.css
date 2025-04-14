@@ -1,0 +1,199 @@
+/* ===================================================================
+   West Ham & McLaren Themed Website - Style Sheet
+   =================================================================== */
+
+/* 
+   Reset some basic elements to remove default browser styles.
+   This ensures consistency across different browsers.
+*/
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* 
+   General body styling:
+   - Sets a clean font, background color, and text color.
+   - Adds some padding to ensure content isn't flush with the screen edges.
+*/
+body {
+    font-family: Arial, sans-serif; /* Primary font for the website */
+    line-height: 1.6;               /* Improve readability */
+    background-color: #f5f5f5;      /* Light grey background for a neutral look */
+    color: #333;                    /* Dark grey text color for good contrast */
+    padding: 20px;                  /* Padding around the main body content */
+}
+
+/* 
+   Header styling:
+   - Provides a gradient background combining West Ham's claret and McLaren's orange.
+   - Centers text and images for a cohesive look.
+   - Adds padding for spacing.
+*/
+header {
+    background: linear-gradient(135deg, #7a0019, #ff8800); /* West Ham claret and McLaren orange */
+    color: #fff;                   /* White text for contrast on dark backgrounds */
+    text-align: center;            /* Center align header content */
+    padding: 40px 20px;            /* Padding around header content */
+}
+
+/* 
+   Header title styling:
+   - Increases font size for the main title and adds margin for spacing.
+*/
+header h1 {
+    margin-bottom: 20px;           /* Spacing between the title and subsequent elements */
+    font-size: 2.5em;              /* Larger font size for prominence */
+}
+
+/* 
+   Header image styling:
+   - Sets a fixed width for logo images and margin for spacing.
+*/
+header img {
+    width: 100px;                 /* Fixed width for logos */
+    height: auto;                 /* Maintain image aspect ratio */
+    margin: 0 10px;               /* Horizontal spacing between images */
+}
+
+/* 
+   Main content styling:
+   - Adds margin to create space between the header and main content.
+*/
+main {
+    margin: 40px 0;               /* Space above and below the main content */
+}
+
+/* 
+   Section styling:
+   - Adds spacing between different sections for clarity.
+*/
+section {
+    margin-bottom: 40px;          /* Space below each section */
+}
+
+/* 
+   Article styling:
+   - Provides a white background for better readability.
+   - Adds padding, margin, border-radius, and a subtle shadow for visual separation.
+*/
+article {
+    background: #fff;             /* White background for article content */
+    padding: 20px;                /* Internal padding within articles */
+    margin: 20px 0;               /* Margins to separate articles from others */
+    border-radius: 5px;           /* Rounded corners for a modern look */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+}
+
+/* 
+   Headings styling:
+   - Styles H2 and H3 to maintain a clear hierarchy.
+   - H2: Section titles with borders for separation.
+   - H3: Article titles with slight color differentiation.
+*/
+h2 {
+    margin-bottom: 20px;          /* Spacing below H2 elements */
+    font-size: 2em;               /* Large size for section headings */
+    border-bottom: 2px solid #ccc; /* Underline to visually separate sections */
+    padding-bottom: 10px;         /* Space between text and border */
+}
+
+h3 {
+    margin-bottom: 15px;          /* Spacing below H3 elements */
+    font-size: 1.5em;             /* Slightly smaller than H2 */
+    color: #444;                 /* Darker shade for subheadings */
+}
+
+/* 
+   Paragraph styling:
+   - Adds margin at the bottom of paragraphs for readability.
+*/
+p {
+    margin-bottom: 10px;          /* Space below paragraphs */
+}
+
+/* 
+   Footer styling:
+   - Centers the footer content.
+   - Uses a dark background with light text.
+   - Adjusts padding and font size.
+*/
+footer {
+    text-align: center;           /* Center the footer content */
+    padding: 20px;                /* Padding for visual comfort */
+    background: #333;             /* Dark background for contrast */
+    color: #fff;                  /* White text for readability */
+    font-size: 0.9em;             /* Slightly smaller font size */
+}
+
+/* 
+   Image styling:
+   - Ensures images are responsive.
+   - Constrain image width to the container.
+*/
+img {
+    max-width: 100%;              /* Ensure images do not overflow their container */
+    height: auto;                 /* Maintain aspect ratio */
+}
+
+/* 
+   Link styling:
+   - Sets a default color for hyperlinks and removes the underline for a cleaner look.
+*/
+a {
+    color: #0077cc;              /* Blue color for links */
+    text-decoration: none;       /* Remove underline for a cleaner look */
+}
+
+/* ===================================================================
+   Navigation Bar Styling
+   =================================================================== */
+
+nav ul {
+    list-style: none;             /* Remove default bullet points */
+    display: flex;                /* Arrange items in a horizontal row */
+    justify-content: center;      /* Center the items horizontally */
+    margin: 0;                    /* Remove default margins */
+    padding: 10px 0;              /* Vertical padding for better spacing */
+    background-color: #0077cc;    /* Navigation bar background color */
+}
+
+nav ul li {
+    margin: 0 15px;               /* Horizontal spacing between nav items */
+}
+
+nav ul li a {
+    color: #fff;                  /* White color for link text */
+    text-decoration: none;        /* Remove the default underline from links */
+    font-weight: bold;            /* Bold text for better visibility */
+    padding: 10px 15px;           /* Padding to increase the clickable area */
+    transition: background-color 0.3s ease; /* Smooth transition for hover effect */
+}
+
+nav ul li a:hover {
+    background-color: #005999;    /* Darker background on hover */
+}
+
+/* ===================================================================
+   Content Wrapper and Sidebar Layout
+   =================================================================== */
+
+.content-wrapper {
+    display: flex;                /* Enable flexbox layout */
+    flex-direction: row;          /* Arrange children in a row */
+    justify-content: space-between;/* Space between main and sidebar */
+    gap: 20px;                    /* Optional spacing between columns */
+    align-items: flex-start;      /* Align items to the top */
+    margin-top: 20px;             /* Optional margin above the content-wrapper */
+}
+
+.content-wrapper main {
+    flex: 3;                     /* Main content takes up a larger portion */
+    margin-right: 20px;           /* Optional spacing on the right */
+}
+
+.content-wrapper aside.sidebar {
+    flex: 1;                     /* Sidebar occupies the remaining space */
+    max-width: 300px;            /* Maximum width for the sidebar */
+}
