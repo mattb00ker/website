@@ -8,13 +8,14 @@
     -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><!-- Page Title -->My Website</title>
+    <title>My Awesome Site</title>
     <!-- Link to the external CSS stylesheet -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <!-- Header Section -->
-    <header>
+    <header style="display: flex; align-items: center; justify-content: center; gap: 20px;">
+        <a href="index.html"><img src="images/myRadioLogo.png" alt="My Radio Logo" title="My Radio Logo"></a>
         <h1>Welcome to My Website</h1>
         <!-- Placeholder for header images, such as logos -->
         <img src="images/WHU_logo.svg" alt="West Ham Logo" title="West Ham Logo">
@@ -24,7 +25,6 @@
     <!-- Navigation Bar -->
     <nav>
         <ul>
-            <li><a href="index.html">Home</a></li>
             <li><a href="about.html">About</a></li>
             <li><a href="band-plans.html">Band Plans</a></li>
             <li><a href="mclaren.html">McLaren</a></li>
@@ -47,13 +47,18 @@
             <section id="weather-widget">
                 <h2>Current Weather</h2>
                 <div class="widget-content">
-                    <p>Weather widget coming soon.</p>
+                    <a class="weatherwidget-io" href="https://forecast7.com/en/51d550d71/southend-on-sea/" data-label_1="SOUTHEND-ON-SEA" data-label_2="WEATHER" data-theme="retro-sky" >SOUTHEND-ON-SEA WEATHER</a>
+                    <script>
+                        !function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src='https://weatherwidget.io/js/widget.min.js';fjs.parentNode.insertBefore(js,fjs);}}(document,'script','weatherwidget-io-js');
+                    </script>
                 </div>
             </section>
             <section id="rf-widget">
                 <h2>RF Propagation Conditions</h2>
                 <div class="widget-content">
-                    <p>RF propagation conditions widget coming soon.</p>
+                    <center>
+                        <a href="https://www.hamqsl.com/solar.html" title="Click to add Solar-Terrestrial Data to your website!"><img src="https://www.hamqsl.com/solarvhf.php"></a>
+                    </center>
                 </div>
             </section>
         </aside>
