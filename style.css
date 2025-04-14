@@ -197,3 +197,33 @@ nav ul li a:hover {
     flex: 1;                     /* Sidebar occupies the remaining space */
     max-width: 300px;            /* Maximum width for the sidebar */
 }
+/* ===================================================================
+   Band Plans Table Styling
+   =================================================================== */
+   .band-plans-table {
+    width: 100%;                 /* Make the table use full container width */
+    border-collapse: collapse;   /* Collapse borders for a clean look */
+    margin: 20px 0;              /* Vertical spacing around the table */
+    font-family: Arial, sans-serif;
+    font-size: 1em;
+  }
+  
+  .band-plans-table thead {
+    background-color: #0077cc;   /* Use your theme's primary color */
+    color: #fff;                 /* White text for the header */
+  }
+  
+  .band-plans-table th,
+  .band-plans-table td {
+    border: 1px solid #ddd;      /* Light border for cells */
+    padding: 10px;               /* Adequate padding for readability */
+    text-align: center;          /* Centered text in cells */
+  }
+  
+  .band-plans-table tbody tr:nth-child(even) {
+    background-color: #f3f3f3;   /* Alternate row color for better readability */
+  }
+  
+  .band-plans-table tbody tr:hover {
+    background-color: #e9e9e9;   /* Highlight row on hover */
+  }
