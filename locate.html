@@ -39,6 +39,9 @@
 
   <!-- Transport-mode selector -->
   <div class="controls">
+    <label for="file-input">Load locations CSV:</label>
+    <input type="file" id="file-input" accept=".csv">
+    <br>
     <label for="mode">Transport mode:</label>
     <select id="mode">
       <option value="car">Driving</option>
@@ -52,19 +55,24 @@
   <!-- Leaflet Routing Machine JS -->
   <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
   <script>
-    // ==== 1. LOAD LOCATIONS FROM CSV ====
+    // ==== 1. PARSE USER‐UPLOADED CSV ====
     let locations = [];
-    Papa.parse('locations.csv', {
-      download: true,
-      header: true,
-      complete: function(results) {
-        locations = results.data.map(r => ({
-          name: r.name,
-          coords: [parseFloat(r.lat), parseFloat(r.lng)]
-        }));
-        initApp();
-      }
-    });
+    document.getElementById('file-input')
+      .addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        Papa.parse(file, {
+          header: true,
+          skipEmptyLines: true,
+          complete: function(results) {
+            locations = results.data.map(r => ({
+              name: r.name,
+              coords: [parseFloat(r.lat), parseFloat(r.lng)]
+            }));
+            initApp();
+          }
+        });
+      });
 
     function initApp() {
       // ==== 2. INITIALIZE MAP ====
