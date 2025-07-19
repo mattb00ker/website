@@ -58,6 +58,9 @@
 
   <!-- Transport-mode selector -->
   <div class="controls">
+    <label for="destination-select">Destination:</label>
+    <select id="destination-select"></select>
+    <br>
     <label for="mode">Transport mode:</label>
     <select id="mode">
       <option value="car">Driving</option>
@@ -71,6 +74,9 @@
   <!-- Leaflet Routing Machine JS -->
   <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
   <script>
+    let routingControl = null;
+    let lastPosition = null;
+
     // ==== 1. PARSE USER‐UPLOADED CSV ====
     let locations = [];
     document.getElementById('file-input')
@@ -94,6 +100,17 @@
       });
 
     function initApp() {
+      // Populate destination selector
+      const destSelect = document.getElementById('destination-select');
+      locations.forEach((loc, i) => {
+        const option = document.createElement('option');
+        option.value = i;
+        option.text = loc.name;
+        destSelect.appendChild(option);
+      });
+      // Default transport mode to walking
+      document.getElementById('mode').value = 'foot';
+
       // ==== 2. INITIALIZE MAP ====
       const map = L.map('map').setView([51.505, -0.09], 13);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -111,8 +128,6 @@
           );
       });
 
-      let routingControl = null; // will hold our route
-
       // ==== 3. HAVERSINE DISTANCE ====
       function haversineDistance([lat1, lon1], [lat2, lon2]) {
         const toRad = deg => deg * Math.PI / 180;
@@ -126,29 +141,19 @@
         return R * c;
       }
 
-      // ==== 4. FIND & DISPLAY FASTEST ROUTE ====
-      function findFastestRoute(position) {
+      function findRoute(position) {
         const userCoords = [position.coords.latitude, position.coords.longitude];
-
-        // 4a) Compute straight-line distances
-        const ranked = locations
-          .map(loc => ({
-            ...loc,
-            distance: haversineDistance(userCoords, loc.coords)
-          }))
-          .sort((a, b) => a.distance - b.distance)
-          .slice(0, 3); // take top 3 candidates
-
-        // 4b) Remove old route if any
+        const destIndex = document.getElementById('destination-select').value;
+        const destCoords = locations[destIndex].coords;
+        // Remove old route
         if (routingControl) {
           map.removeControl(routingControl);
         }
-
-        // 4c) Create new routing control targeting the closest by travel time
+        // Draw new route
         routingControl = L.Routing.control({
           waypoints: [
             L.latLng(...userCoords),
-            L.latLng(...ranked[0].coords)
+            L.latLng(...destCoords)
           ],
           router: L.Routing.osrmv1({
             serviceUrl: 'https://router.project-osrm.org/route/v1',
@@ -160,32 +165,41 @@
         }).addTo(map);
       }
 
-      // ==== 5. GEOLOCATION SETUP ====
       if ('geolocation' in navigator) {
-        navigator.geolocation.getCurrentPosition(pos => {
-          // place a marker for the user
-          const u = [pos.coords.latitude, pos.coords.longitude];
-          L.marker(u)
-            .addTo(map)
-            .bindPopup("You are here")
-            .openPopup();
-
-          map.setView(u, 13);
-          findFastestRoute(pos);
+        navigator.geolocation.watchPosition(pos => {
+          const newCoords = [pos.coords.latitude, pos.coords.longitude];
+          // Only reroute if moved more than 10m
+          if (!lastPosition || haversineDistance(lastPosition, newCoords) > 10) {
+            lastPosition = newCoords;
+            findRoute(pos);
+          }
         }, err => {
           alert("Unable to get location: " + err.message);
+        }, {
+          enableHighAccuracy: true,
+          maximumAge: 0,
+          timeout: 10000
         });
       } else {
         alert("Your browser doesn’t support geolocation.");
       }
 
-      // ==== 6. RECOMPUTE ON MODE CHANGE ====
-      document.getElementById('mode')
-        .addEventListener('change', () => {
-          if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(findFastestRoute);
-          }
-        });
+      destSelect.addEventListener('change', () => {
+        if (lastPosition) {
+          findRoute({coords: {latitude: lastPosition[0], longitude: lastPosition[1]}});
+        }
+      });
+      document.getElementById('mode').addEventListener('change', () => {
+        if (lastPosition) {
+          findRoute({coords: {latitude: lastPosition[0], longitude: lastPosition[1]}});
+        }
+      });
+    }
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js')
+        .then(() => console.log('Service worker registered'))
+        .catch(err => console.error('Service worker registration failed:', err));
     }
   </script>
 </body>
