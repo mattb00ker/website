@@ -14,6 +14,8 @@
     rel="stylesheet"
     href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css"
   />
+  <!-- PapaParse for CSV parsing -->
+  <script src="https://unpkg.com/papaparse@5.3.2/papaparse.min.js"></script>
   <style>
     /* Make the map fill the viewport */
     #map { height: 100vh; margin: 0; padding: 0; }
@@ -50,103 +52,114 @@
   <!-- Leaflet Routing Machine JS -->
   <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
   <script>
-    // ==== 1. YOUR LOCATIONS ====
-    // Replace these with your own names & [lat, lng].
-    const locations = [
-      { name: "Big Ben", coords: [51.5007, -0.1246] },
-      { name: "Tower Bridge", coords: [51.5055, -0.0754] },
-      // … up to ~100 entries
-    ];
-
-    // ==== 2. INITIALIZE MAP ====
-    const map = L.map('map').setView([51.505, -0.09], 13);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(map);
-
-    // Add markers for all predefined locations
-    locations.forEach(loc => {
-      L.marker(loc.coords)
-        .addTo(map)
-        .bindPopup(loc.name);
+    // ==== 1. LOAD LOCATIONS FROM CSV ====
+    let locations = [];
+    Papa.parse('locations.csv', {
+      download: true,
+      header: true,
+      complete: function(results) {
+        locations = results.data.map(r => ({
+          name: r.name,
+          coords: [parseFloat(r.lat), parseFloat(r.lng)]
+        }));
+        initApp();
+      }
     });
 
-    let routingControl = null; // will hold our route
+    function initApp() {
+      // ==== 2. INITIALIZE MAP ====
+      const map = L.map('map').setView([51.505, -0.09], 13);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(map);
 
-    // ==== 3. HAVERSINE DISTANCE ====
-    function haversineDistance([lat1, lon1], [lat2, lon2]) {
-      const toRad = deg => deg * Math.PI / 180;
-      const R = 6371e3; // metres
-      const φ1 = toRad(lat1), φ2 = toRad(lat2);
-      const Δφ = toRad(lat2 - lat1), Δλ = toRad(lon2 - lon1);
-      const a = Math.sin(Δφ/2)**2 +
-                Math.cos(φ1) * Math.cos(φ2) *
-                Math.sin(Δλ/2)**2;
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      return R * c;
-    }
+      // Add markers for all predefined locations
+      locations.forEach(loc => {
+        L.marker(loc.coords)
+          .addTo(map)
+          .bindPopup(
+            `<strong>${loc.name}</strong><br>` +
+            `<a href="https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${loc.coords[0]},${loc.coords[1]}" target="_blank">Street View</a>`
+          );
+      });
 
-    // ==== 4. FIND & DISPLAY FASTEST ROUTE ====
-    function findFastestRoute(position) {
-      const userCoords = [position.coords.latitude, position.coords.longitude];
+      let routingControl = null; // will hold our route
 
-      // 4a) Compute straight-line distances
-      const ranked = locations
-        .map(loc => ({
-          ...loc,
-          distance: haversineDistance(userCoords, loc.coords)
-        }))
-        .sort((a, b) => a.distance - b.distance)
-        .slice(0, 3); // take top 3 candidates
-
-      // 4b) Remove old route if any
-      if (routingControl) {
-        map.removeControl(routingControl);
+      // ==== 3. HAVERSINE DISTANCE ====
+      function haversineDistance([lat1, lon1], [lat2, lon2]) {
+        const toRad = deg => deg * Math.PI / 180;
+        const R = 6371e3; // metres
+        const φ1 = toRad(lat1), φ2 = toRad(lat2);
+        const Δφ = toRad(lat2 - lat1), Δλ = toRad(lon2 - lon1);
+        const a = Math.sin(Δφ/2)**2 +
+                  Math.cos(φ1) * Math.cos(φ2) *
+                  Math.sin(Δλ/2)**2;
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
       }
 
-      // 4c) Create new routing control targeting the closest by travel time
-      routingControl = L.Routing.control({
-        waypoints: [
-          L.latLng(...userCoords),
-          L.latLng(...ranked[0].coords)
-        ],
-        router: L.Routing.osrmv1({
-          serviceUrl: 'https://router.project-osrm.org/route/v1',
-          profile: document.getElementById('mode').value
-        }),
-        fitSelectedRoutes: true,
-        addWaypoints: false,
-        show: false
-      }).addTo(map);
-    }
+      // ==== 4. FIND & DISPLAY FASTEST ROUTE ====
+      function findFastestRoute(position) {
+        const userCoords = [position.coords.latitude, position.coords.longitude];
 
-    // ==== 5. GEOLOCATION SETUP ====
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(pos => {
-        // place a marker for the user
-        const u = [pos.coords.latitude, pos.coords.longitude];
-        L.marker(u)
-          .addTo(map)
-          .bindPopup("You are here")
-          .openPopup();
+        // 4a) Compute straight-line distances
+        const ranked = locations
+          .map(loc => ({
+            ...loc,
+            distance: haversineDistance(userCoords, loc.coords)
+          }))
+          .sort((a, b) => a.distance - b.distance)
+          .slice(0, 3); // take top 3 candidates
 
-        map.setView(u, 13);
-        findFastestRoute(pos);
-      }, err => {
-        alert("Unable to get location: " + err.message);
-      });
-    } else {
-      alert("Your browser doesn’t support geolocation.");
-    }
-
-    // ==== 6. RECOMPUTE ON MODE CHANGE ====
-    document.getElementById('mode')
-      .addEventListener('change', () => {
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(findFastestRoute);
+        // 4b) Remove old route if any
+        if (routingControl) {
+          map.removeControl(routingControl);
         }
-      });
+
+        // 4c) Create new routing control targeting the closest by travel time
+        routingControl = L.Routing.control({
+          waypoints: [
+            L.latLng(...userCoords),
+            L.latLng(...ranked[0].coords)
+          ],
+          router: L.Routing.osrmv1({
+            serviceUrl: 'https://router.project-osrm.org/route/v1',
+            profile: document.getElementById('mode').value
+          }),
+          fitSelectedRoutes: true,
+          addWaypoints: false,
+          show: false
+        }).addTo(map);
+      }
+
+      // ==== 5. GEOLOCATION SETUP ====
+      if ('geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(pos => {
+          // place a marker for the user
+          const u = [pos.coords.latitude, pos.coords.longitude];
+          L.marker(u)
+            .addTo(map)
+            .bindPopup("You are here")
+            .openPopup();
+
+          map.setView(u, 13);
+          findFastestRoute(pos);
+        }, err => {
+          alert("Unable to get location: " + err.message);
+        });
+      } else {
+        alert("Your browser doesn’t support geolocation.");
+      }
+
+      // ==== 6. RECOMPUTE ON MODE CHANGE ====
+      document.getElementById('mode')
+        .addEventListener('change', () => {
+          if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(findFastestRoute);
+          }
+        });
+    }
   </script>
 </body>
 </html>
