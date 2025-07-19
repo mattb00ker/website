@@ -18,10 +18,11 @@
   <script src="https://unpkg.com/papaparse@5.3.2/papaparse.min.js"></script>
   <style>
     /* Make the map fill the viewport */
-    #map { height: 100vh; margin: 0; padding: 0; }
+    #map { display: none; height: 100vh; margin: 0; padding: 0; }
     /* Container for transport-mode controls */
     .controls {
       position: absolute;
+      display: none;
       top: 10px;
       left: 50px;
       z-index: 1000;
@@ -31,17 +32,32 @@
       box-shadow: 0 1px 5px rgba(0,0,0,0.4);
       font-family: sans-serif;
     }
+    /* Centered upload panel shown before CSV load */
+    #upload-panel {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      padding: 20px;
+      border-radius: 4px;
+      box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+      z-index: 1001;
+      font-family: sans-serif;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
+  <div id="upload-panel">
+    <h3>Load locations CSV</h3>
+    <input type="file" id="file-input" accept=".csv">
+  </div>
   <!-- Map goes here -->
   <div id="map"></div>
 
   <!-- Transport-mode selector -->
   <div class="controls">
-    <label for="file-input">Load locations CSV:</label>
-    <input type="file" id="file-input" accept=".csv">
-    <br>
     <label for="mode">Transport mode:</label>
     <select id="mode">
       <option value="car">Driving</option>
@@ -69,6 +85,9 @@
               name: r.name,
               coords: [parseFloat(r.lat), parseFloat(r.lng)]
             }));
+            document.getElementById('upload-panel').style.display = 'none';
+            document.getElementById('map').style.display = 'block';
+            document.querySelector('.controls').style.display = 'block';
             initApp();
           }
         });
