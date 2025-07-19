@@ -3,23 +3,30 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Simple Sat Nav</title>
+  <title>Personal Sat Nav</title>
+
   <!-- Leaflet CSS -->
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet/dist/leaflet.css"
   />
-  <!-- Leaflet Routing Machine CSS -->
+  <!-- Routing Machine CSS -->
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css"
   />
   <!-- PapaParse for CSV parsing -->
   <script src="https://unpkg.com/papaparse@5.3.2/papaparse.min.js"></script>
+
   <style>
-    /* Make the map fill the viewport */
-    #map { display: none; height: 100vh; margin: 0; padding: 0; }
-    /* Container for transport-mode controls */
+    /* Hide map until CSV is loaded */
+    #map {
+      display: none;
+      height: 100vh;
+      margin: 0;
+      padding: 0;
+    }
+    /* Controls panel (destination, mode, ETA) */
     .controls {
       position: absolute;
       display: none;
@@ -32,7 +39,7 @@
       box-shadow: 0 1px 5px rgba(0,0,0,0.4);
       font-family: sans-serif;
     }
-    /* Centered upload panel shown before CSV load */
+    /* Centered upload panel */
     #upload-panel {
       position: absolute;
       top: 50%;
@@ -49,14 +56,16 @@
   </style>
 </head>
 <body>
+  <!-- Initial CSV upload UI -->
   <div id="upload-panel">
     <h3>Load locations CSV</h3>
     <input type="file" id="file-input" accept=".csv">
   </div>
-  <!-- Map goes here -->
+
+  <!-- Map placeholder -->
   <div id="map"></div>
 
-  <!-- Transport-mode selector -->
+  <!-- Controls for destination, mode, and ETA -->
   <div class="controls">
     <label for="destination-select">Destination:</label>
     <select id="destination-select"></select>
@@ -67,104 +76,96 @@
       <option value="foot">Walking</option>
       <option value="bike">Cycling</option>
     </select>
+    <br>
+    <div id="time-estimate" style="margin-top:8px;">
+      Estimated time: --
+    </div>
   </div>
 
-  <!-- Leaflet JS -->
+  <!-- Leaflet & Routing Machine scripts -->
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-  <!-- Leaflet Routing Machine JS -->
   <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+
   <script>
+    // Globals for route control and position tracking
     let routingControl = null;
     let lastPosition = null;
+    let map;               // will hold our Leaflet map
+    let locations = [];    // array of { name, coords: [lat, lng] }
 
-    // ==== 1. PARSE USER‐UPLOADED CSV ====
-    let locations = [];
-    document.getElementById('file-input')
-      .addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-        Papa.parse(file, {
-          header: true,
-          skipEmptyLines: true,
-          complete: function(results) {
-            locations = results.data.map(r => ({
-              name: r.name,
-              coords: [parseFloat(r.lat), parseFloat(r.lng)]
-            }));
-            document.getElementById('upload-panel').style.display = 'none';
-            document.getElementById('map').style.display = 'block';
-            document.querySelector('.controls').style.display = 'block';
-            initApp();
-          }
-        });
+    // 1) CSV UPLOAD HANDLER
+    document.getElementById('file-input').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: function(results) {
+          // Build our locations array from CSV rows
+          locations = results.data.map(r => ({
+            name: r.name,
+            coords: [parseFloat(r.lat), parseFloat(r.lng)]
+          }));
+
+          // Hide the upload UI, show map & controls
+          document.getElementById('upload-panel').style.display = 'none';
+          document.getElementById('map').style.display = 'block';
+          document.querySelector('.controls').style.display = 'block';
+
+          // Initialize the mapping app
+          initApp();
+        }
       });
+    });
 
+    // 2) INITIALIZE MAP & UI
     function initApp() {
-      // Populate destination selector
-      const destSelect = document.getElementById('destination-select');
-      locations.forEach((loc, i) => {
-        const option = document.createElement('option');
-        option.value = i;
-        option.text = loc.name;
-        destSelect.appendChild(option);
-      });
-      // Default transport mode to walking
-      document.getElementById('mode').value = 'foot';
+      // Create the map centered arbitrarily
+      map = L.map('map').setView([0, 0], 2);
 
-      // ==== 2. INITIALIZE MAP ====
-      const map = L.map('map').setView([51.505, -0.09], 13);
+      // Add OSM tiles
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
         attribution: '&copy; OpenStreetMap contributors'
       }).addTo(map);
 
-      // Add markers for all predefined locations
+      // Drop markers for each location (with Street View link)
       locations.forEach(loc => {
         L.marker(loc.coords)
           .addTo(map)
           .bindPopup(
             `<strong>${loc.name}</strong><br>` +
-            `<a href="https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${loc.coords[0]},${loc.coords[1]}" target="_blank">Street View</a>`
+            `<a href="https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=` +
+            `${loc.coords[0]},${loc.coords[1]}" target="_blank">Street View</a>`
           );
       });
 
-      // ==== 3. HAVERSINE DISTANCE ====
-      function haversineDistance([lat1, lon1], [lat2, lon2]) {
-        const toRad = deg => deg * Math.PI / 180;
-        const R = 6371e3; // metres
-        const φ1 = toRad(lat1), φ2 = toRad(lat2);
-        const Δφ = toRad(lat2 - lat1), Δλ = toRad(lon2 - lon1);
-        const a = Math.sin(Δφ/2)**2 +
-                  Math.cos(φ1) * Math.cos(φ2) *
-                  Math.sin(Δλ/2)**2;
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        return R * c;
-      }
+      // Populate destination dropdown
+      const destSelect = document.getElementById('destination-select');
+      locations.forEach((loc, i) => {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.text = loc.name;
+        destSelect.appendChild(opt);
+      });
 
-      function findRoute(position) {
-        const userCoords = [position.coords.latitude, position.coords.longitude];
-        const destIndex = document.getElementById('destination-select').value;
-        const destCoords = locations[destIndex].coords;
-        // Remove old route
-        if (routingControl) {
-          map.removeControl(routingControl);
+      // Default to walking mode
+      document.getElementById('mode').value = 'foot';
+
+      // Recalculate route when destination or mode changes
+      destSelect.addEventListener('change', () => {
+        if (lastPosition) {
+          findRoute({ coords: { latitude: lastPosition[0], longitude: lastPosition[1] } });
         }
-        // Draw new route
-        routingControl = L.Routing.control({
-          waypoints: [
-            L.latLng(...userCoords),
-            L.latLng(...destCoords)
-          ],
-          router: L.Routing.osrmv1({
-            serviceUrl: 'https://router.project-osrm.org/route/v1',
-            profile: document.getElementById('mode').value
-          }),
-          fitSelectedRoutes: true,
-          addWaypoints: false,
-          show: false
-        }).addTo(map);
-      }
+      });
+      document.getElementById('mode').addEventListener('change', () => {
+        if (lastPosition) {
+          findRoute({ coords: { latitude: lastPosition[0], longitude: lastPosition[1] } });
+        }
+      });
 
+      // Begin continuous tracking & off-course rerouting
       if ('geolocation' in navigator) {
         navigator.geolocation.watchPosition(pos => {
           const newCoords = [pos.coords.latitude, pos.coords.longitude];
@@ -183,21 +184,63 @@
       } else {
         alert("Your browser doesn’t support geolocation.");
       }
+    }
 
-      destSelect.addEventListener('change', () => {
-        if (lastPosition) {
-          findRoute({coords: {latitude: lastPosition[0], longitude: lastPosition[1]}});
-        }
-      });
-      document.getElementById('mode').addEventListener('change', () => {
-        if (lastPosition) {
-          findRoute({coords: {latitude: lastPosition[0], longitude: lastPosition[1]}});
-        }
+    // 3) DISTANCE CALCULATION (Haversine)
+    function haversineDistance([lat1, lon1], [lat2, lon2]) {
+      const toRad = deg => deg * Math.PI / 180;
+      const R = 6371e3; // metres
+      const φ1 = toRad(lat1), φ2 = toRad(lat2);
+      const Δφ = toRad(lat2 - lat1), Δλ = toRad(lon2 - lon1);
+      const a = Math.sin(Δφ/2)**2 +
+                Math.cos(φ1) * Math.cos(φ2) *
+                Math.sin(Δλ/2)**2;
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    }
+
+    // 4) DRAW ROUTE & UPDATE ETA
+    function findRoute(position) {
+      const userCoords = [position.coords.latitude, position.coords.longitude];
+      const destIndex = document.getElementById('destination-select').value;
+      const destCoords = locations[destIndex].coords;
+
+      // Remove any existing route
+      if (routingControl) {
+        map.removeControl(routingControl);
+      }
+
+      // Create new routing control
+      routingControl = L.Routing.control({
+        waypoints: [
+          L.latLng(...userCoords),
+          L.latLng(...destCoords)
+        ],
+        router: L.Routing.osrmv1({
+          serviceUrl: 'https://router.project-osrm.org/route/v1',
+          profile: document.getElementById('mode').value
+        }),
+        fitSelectedRoutes: true,
+        addWaypoints: false,
+        show: false
+      }).addTo(map);
+
+      // When OSRM returns a route, grab its totalTime for an ETA
+      routingControl.on('routesfound', function(e) {
+        const totalSeconds = e.routes[0].summary.totalTime;
+        const minutes = Math.round(totalSeconds / 60);
+        const hours = Math.floor(minutes / 60);
+        const mins = minutes % 60;
+        const eta = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+        document.getElementById('time-estimate').textContent =
+          'Estimated time: ' + eta;
       });
     }
 
+    // 5) SERVICE WORKER REGISTRATION (for offline caching)
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js')
+      navigator.serviceWorker
+        .register('/sw.js')
         .then(() => console.log('Service worker registered'))
         .catch(err => console.error('Service worker registration failed:', err));
     }

@@ -1,9 +1,11 @@
+// sw.js — Service Worker for Offline Caching
+
 const CACHE_NAME = 'satnav-cache-v1';
 const URLS_TO_CACHE = [
-  '/',
+  '/',               // root (serves locate.html or index.html)
   '/locate.html',
-  // include any other local assets:
   '/sw.js',
+  // CDN-hosted assets to cache
   'https://unpkg.com/leaflet/dist/leaflet.css',
   'https://unpkg.com/leaflet/dist/leaflet.js',
   'https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css',
@@ -12,24 +14,48 @@ const URLS_TO_CACHE = [
 ];
 
 self.addEventListener('install', event => {
+  // Pre-cache the app shell
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => cache.addAll(URLS_TO_CACHE))
   );
 });
 
+self.addEventListener('activate', event => {
+  // Clean up old caches if you ever change CACHE_NAME
+  event.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(
+        keys
+          .filter(key => key !== CACHE_NAME)
+          .map(key => caches.delete(key))
+      )
+    )
+  );
+});
+
 self.addEventListener('fetch', event => {
+  // Respond from cache first, then network, and cache new requests
   event.respondWith(
-    caches.match(event.request)
-      .then(resp => resp || fetch(event.request).then(response => {
-        // Cache fetched assets
-        return caches.open(CACHE_NAME).then(cache => {
-          cache.put(event.request, response.clone());
-          return response;
-        });
-      }))
-      .catch(() => {
-        // Optionally return a fallback page or asset here
-      })
+    caches.match(event.request).then(cached => {
+      if (cached) {
+        return cached;
+      }
+      return fetch(event.request).then(response => {
+        // Only cache successful (status 200) GET requests
+        if (
+          response.status === 200 &&
+          event.request.method === 'GET'
+        ) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => {
+            cache.put(event.request, clone);
+          });
+        }
+        return response;
+      });
+    }).catch(() => {
+      // Optional fallback: could return a generic offline page or image
+    })
   );
 });
