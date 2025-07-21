@@ -157,10 +157,14 @@
       locations.forEach(loc => {
         L.marker(loc.coords).addTo(map).bindPopup(
           `<strong>${loc.name}</strong><br>` +
+          `<a href="${loc.website}" target="_blank">` +
+            `<img src="https://image.thum.io/get/width/300/${loc.website}" ` +
+                 `alt="Thumbnail of ${loc.name}" ` +
+                 `style="width:100%;height:auto;margin:8px 0;">` +
+          `</a>` +
           `<a href="${loc.website}" target="_blank">Website</a><br>` +
           `<a href="https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=` +
-          `${loc.coords[0]},${loc.coords[1]}" target="_blank">Street View</a><br>` +
-          `<a href="${csvUrl}" download>Download CSV</a>`
+            `${loc.coords[0]},${loc.coords[1]}" target="_blank">Street View</a>`
         );
       });
 
