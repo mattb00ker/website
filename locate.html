@@ -19,20 +19,31 @@
   <script src="https://unpkg.com/papaparse@5.3.2/papaparse.min.js"></script>
 
   <style>
-    /* Hide map until CSV is loaded */
+    /* Hide map until CSV is loaded, and make room for instructions pane */
     #map {
       display: none;
-      height: 100vh;
-      margin: 0;
-      padding: 0;
+      position: absolute;
+      top: 0; bottom: 0; left: 0; right: 25%;
+    }
+    /* Sidebar for turn-by-turn text */
+    #instructions {
+      display: none;
+      position: absolute;
+      top: 0; bottom: 0; right: 0;
+      width: 25%;
+      background: #fff;
+      overflow-y: auto;
+      padding: 8px;
+      box-shadow: -2px 0 5px rgba(0,0,0,0.1);
+      font-family: sans-serif;
+      z-index: 1001;
     }
     /* Controls panel (destination, mode, ETA) */
     .controls {
       position: absolute;
       display: none;
-      top: 10px;
-      left: 50px;
-      z-index: 1000;
+      top: 10px; left: 10px;
+      z-index: 1002;
       background: white;
       padding: 8px 12px;
       border-radius: 4px;
@@ -42,30 +53,32 @@
     /* Centered upload panel */
     #upload-panel {
       position: absolute;
-      top: 50%;
-      left: 50%;
+      top: 50%; left: 50%;
       transform: translate(-50%, -50%);
       background: white;
       padding: 20px;
       border-radius: 4px;
       box-shadow: 0 1px 5px rgba(0,0,0,0.4);
-      z-index: 1001;
       font-family: sans-serif;
       text-align: center;
+      z-index: 1003;
     }
   </style>
 </head>
 <body>
-  <!-- Initial CSV upload UI -->
+  <!-- 1) CSV upload UI -->
   <div id="upload-panel">
     <h3>Load locations CSV</h3>
     <input type="file" id="file-input" accept=".csv">
   </div>
 
-  <!-- Map placeholder -->
+  <!-- 2) Map container (left 75%) -->
   <div id="map"></div>
 
-  <!-- Controls for destination, mode, and ETA -->
+  <!-- 3) Turn-by-turn sidebar (right 25%) -->
+  <div id="instructions"></div>
+
+  <!-- 4) Controls: destination picker, mode, ETA -->
   <div class="controls">
     <label for="destination-select">Destination:</label>
     <select id="destination-select"></select>
@@ -87,50 +100,46 @@
   <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
 
   <script>
-    // Globals for route control and position tracking
-    let routingControl = null;
-    let lastPosition = null;
-    let map;               // will hold our Leaflet map
-    let locations = [];    // array of { name, coords: [lat, lng] }
+    // Globals
+    let map, routingControl, lastPosition;
+    let locations = [];
 
-    // 1) CSV UPLOAD HANDLER
-    document.getElementById('file-input').addEventListener('change', function(e) {
+    // 1) CSV upload handler
+    document.getElementById('file-input').addEventListener('change', e => {
       const file = e.target.files[0];
       if (!file) return;
 
       Papa.parse(file, {
         header: true,
         skipEmptyLines: true,
-        complete: function(results) {
-          // Build our locations array from CSV rows
+        complete: results => {
+          // Build our locations array
           locations = results.data.map(r => ({
             name: r.name,
             coords: [parseFloat(r.lat), parseFloat(r.lng)]
           }));
 
-          // Hide the upload UI, show map & controls
+          // Hide upload UI, show map, controls, instructions
           document.getElementById('upload-panel').style.display = 'none';
           document.getElementById('map').style.display = 'block';
           document.querySelector('.controls').style.display = 'block';
+          document.getElementById('instructions').style.display = 'block';
 
-          // Initialize the mapping app
           initApp();
         }
       });
     });
 
-    // 2) INITIALIZE MAP & UI
+    // 2) Initialize map, markers, dropdown, and start geolocation watch
     function initApp() {
-      // Create the map centered arbitrarily
+      // Create map
       map = L.map('map').setView([0, 0], 2);
-
-      // Add OSM tiles
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
         attribution: '&copy; OpenStreetMap contributors'
       }).addTo(map);
 
-      // Drop markers for each location (with Street View link)
+      // Draw markers
       locations.forEach(loc => {
         L.marker(loc.coords)
           .addTo(map)
@@ -141,7 +150,7 @@
           );
       });
 
-      // Populate destination dropdown
+      // Populate destination selector
       const destSelect = document.getElementById('destination-select');
       locations.forEach((loc, i) => {
         const opt = document.createElement('option');
@@ -150,10 +159,10 @@
         destSelect.appendChild(opt);
       });
 
-      // Default to walking mode
+      // Default to walking
       document.getElementById('mode').value = 'foot';
 
-      // Recalculate route when destination or mode changes
+      // Redraw route when destination or mode changes
       destSelect.addEventListener('change', () => {
         if (lastPosition) {
           findRoute({ coords: { latitude: lastPosition[0], longitude: lastPosition[1] } });
@@ -165,11 +174,10 @@
         }
       });
 
-      // Begin continuous tracking & off-course rerouting
+      // Start continuous tracking & off-course rerouting
       if ('geolocation' in navigator) {
         navigator.geolocation.watchPosition(pos => {
           const newCoords = [pos.coords.latitude, pos.coords.longitude];
-          // Only reroute if moved more than 10m
           if (!lastPosition || haversineDistance(lastPosition, newCoords) > 10) {
             lastPosition = newCoords;
             findRoute(pos);
@@ -186,10 +194,10 @@
       }
     }
 
-    // 3) DISTANCE CALCULATION (Haversine)
+    // 3) Haversine distance (for off-course detection)
     function haversineDistance([lat1, lon1], [lat2, lon2]) {
       const toRad = deg => deg * Math.PI / 180;
-      const R = 6371e3; // metres
+      const R = 6371e3;
       const φ1 = toRad(lat1), φ2 = toRad(lat2);
       const Δφ = toRad(lat2 - lat1), Δλ = toRad(lon2 - lon1);
       const a = Math.sin(Δφ/2)**2 +
@@ -199,18 +207,18 @@
       return R * c;
     }
 
-    // 4) DRAW ROUTE & UPDATE ETA
+    // 4) Build route, update ETA & turn-by-turn list
     function findRoute(position) {
       const userCoords = [position.coords.latitude, position.coords.longitude];
       const destIndex = document.getElementById('destination-select').value;
       const destCoords = locations[destIndex].coords;
 
-      // Remove any existing route
+      // Remove old route
       if (routingControl) {
         map.removeControl(routingControl);
       }
 
-      // Create new routing control
+      // Create new control (no default itinerary)
       routingControl = L.Routing.control({
         waypoints: [
           L.latLng(...userCoords),
@@ -225,24 +233,35 @@
         show: false
       }).addTo(map);
 
-      // When OSRM returns a route, grab its totalTime for an ETA
+      // When route is found, update ETA and instructions
       routingControl.on('routesfound', function(e) {
-        const totalSeconds = e.routes[0].summary.totalTime;
-        const minutes = Math.round(totalSeconds / 60);
-        const hours = Math.floor(minutes / 60);
-        const mins = minutes % 60;
-        const eta = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+        // ETA
+        const totalSec = e.routes[0].summary.totalTime;
+        const minsTotal = Math.round(totalSec / 60);
+        const hrs = Math.floor(minsTotal / 60), mins = minsTotal % 60;
+        const eta = hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
         document.getElementById('time-estimate').textContent =
           'Estimated time: ' + eta;
+
+        // Turn-by-turn list
+        const instrDiv = document.getElementById('instructions');
+        instrDiv.innerHTML = '<h4>Directions:</h4>';
+        const ol = document.createElement('ol');
+        e.routes[0].instructions.forEach(inst => {
+          const li = document.createElement('li');
+          li.textContent = inst.text;
+          ol.appendChild(li);
+        });
+        instrDiv.appendChild(ol);
       });
     }
 
-    // 5) SERVICE WORKER REGISTRATION (for offline caching)
+    // 5) Service worker registration for offline caching
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker
         .register('/sw.js')
         .then(() => console.log('Service worker registered'))
-        .catch(err => console.error('Service worker registration failed:', err));
+        .catch(err => console.error('SW registration failed:', err));
     }
   </script>
 </body>
