@@ -293,6 +293,7 @@
             ? 'Location'
             : categoryField.charAt(0).toUpperCase() + categoryField.slice(1));
         updateDestinationDropdown();
+        updateDistanceInfo();
       };
       // Initial label
       document.getElementById('nearest-coffee').textContent =
@@ -341,9 +342,10 @@
       if (lastPosition && !isNaN(i)) {
         const distText = (haversineDistance(lastPosition, locations[i].coords) / 1000).toFixed(2) + ' km';
         distanceDiv.textContent = 'Distance: ' + distText;
-      } else {
-        distanceDiv.textContent = '';
       }
+      // else {
+      //   distanceDiv.textContent = '';
+      // }
     }
 
     document.body.addEventListener('click', e => {
