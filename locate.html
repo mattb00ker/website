@@ -95,8 +95,6 @@
     <label for="category-select">Category:</label>
     <select id="category-select"></select><br>
     <button id="nearest-coffee">Nearest Coffee Shop</button><br>
-    <label for="favorite-select">Favorites:</label>
-    <select id="favorite-select"><option value="">Select favorite</option></select><br>
   </div>
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -360,11 +358,10 @@
           }
         });
         if (nearest === null) return alert('No locations found for selected category.');
-        const coords = locations[nearest].coords;
-        map.panTo(coords);
-        markers[nearest].openPopup();
-        markers[nearest].bringToFront();
-        findRoute({coords:{latitude:lastPosition[0],longitude:lastPosition[1]}});
+        // Select this location in the dropdown
+        const destSelect = document.getElementById('destination-select');
+        destSelect.value = nearest;
+        destSelect.dispatchEvent(new Event('change'));
       });
 
     if ('serviceWorker' in navigator) {
