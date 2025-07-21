@@ -128,13 +128,14 @@
       }).addTo(map);
 
       locations.forEach((loc, i) => {
-        const marker = L.marker(loc.coords)
+        const marker = L.marker(loc.coords, { zIndexOffset: 1000 })
           .addTo(map)
           .bindPopup(
             `<strong>${loc.name}</strong><br>` +
             `<a href="${loc.website}" target="_blank">Website</a><br>` +
             `<a href="https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${loc.coords[0]},${loc.coords[1]}" target="_blank">Street View</a>`
-          );
+          )
+          .on('click', function() { this.openPopup(); });
         markers[i] = marker;
       });
 
@@ -158,6 +159,7 @@
           const destCoords = locations[destIndex].coords;
           map.panTo(destCoords);
           markers[destIndex].openPopup();
+          markers[destIndex].bringToFront();
         }
       });
 
@@ -172,6 +174,7 @@
             const initialCoords = locations[initialIndex].coords;
             map.panTo(initialCoords);
             markers[initialIndex].openPopup();
+            markers[initialIndex].bringToFront();
           }
         }, err => alert(err.message), {
           enableHighAccuracy: true, maximumAge: 0, timeout: 10000
