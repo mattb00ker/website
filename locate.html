@@ -77,7 +77,6 @@
   <div id="upload-panel">
     <h3>Load locations CSV</h3>
     <input type="file" id="file-input" accept=".csv" />
-    <br><button id="load-default">Load Default Locations</button>
   </div>
 
   <div id="map"></div>
@@ -117,33 +116,6 @@
           document.getElementById('instructions').style.display = 'block';
           csvUrl = URL.createObjectURL(file);
           initApp();
-        }
-      });
-    });
-
-    // Load default CSV from server if it exists
-    document.getElementById('load-default').addEventListener('click', () => {
-      Papa.parse('newloc.csv', {
-        download: true,
-        header: true,
-        skipEmptyLines: true,
-        complete: results => {
-          // Build locations and set source URL
-          locations = results.data.map(r => ({
-            name: r.name,
-            coords: [parseFloat(r.lat), parseFloat(r.lng)],
-            website: r.website
-          }));
-          // Show UI
-          document.getElementById('upload-panel').style.display = 'none';
-          document.getElementById('map').style.display = 'block';
-          document.querySelector('.controls').style.display = 'block';
-          document.getElementById('instructions').style.display = 'block';
-          csvUrl = 'newloc.csv';
-          initApp();
-        },
-        error: err => {
-          alert('Failed to load default CSV: ' + err.message);
         }
       });
     });
@@ -223,10 +195,15 @@
       }).addTo(map);
 
       routingControl.on('routesfound', e => {
-        const sec = e.routes[0].summary.totalTime;
-        const mins = Math.round(sec/60), h = Math.floor(mins/60), m = mins % 60;
-        document.getElementById('time-estimate').textContent =
-          'ETA: ' + (h>0 ? `${h}h ${m}m` : `${m}m`);
+        const totalSec = e.routes[0].summary.totalTime;
+        const hours = Math.floor(totalSec / 3600);
+        const minutes = Math.floor((totalSec % 3600) / 60);
+        const seconds = Math.floor(totalSec % 60);
+        let eta = '';
+        if (hours > 0) eta += hours + 'h ';
+        if (minutes > 0) eta += minutes + 'm ';
+        eta += seconds + 's';
+        document.getElementById('time-estimate').textContent = 'ETA: ' + eta;
         const ins = document.getElementById('instructions');
         ins.innerHTML = '<h4>Directions</h4>';
         const ol = document.createElement('ol');
@@ -242,9 +219,6 @@
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js');
     }
-
-    // Uncomment to auto-load default CSV on page load:
-    // document.getElementById('load-default').click();
   </script>
 </body>
 </html>
