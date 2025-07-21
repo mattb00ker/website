@@ -130,6 +130,7 @@
           );
           // Always include 'coffeeshop' if present
           if ('coffeeshop' in locations[0]) categoryOptions.unshift('coffeeshop');
+          categoryOptions.unshift('all');
           categoryField = categoryOptions[0] || '';
           populateCategorySelect();
 
@@ -200,6 +201,7 @@
             map.panTo(initialCoords);
             markers[initialIndex].openPopup();
             markers[initialIndex].bringToFront();
+            updateDestinationDropdown();
           }
         }, err => alert(err.message), {
           enableHighAccuracy: true, maximumAge: 0, timeout: 10000
@@ -268,40 +270,62 @@
     function populateCategorySelect() {
       const sel = document.getElementById('category-select');
       sel.innerHTML = '';
-      categoryOptions.forEach(opt => {
+      // Add 'All' at top
+      const allOpt = document.createElement('option');
+      allOpt.value = 'all';
+      allOpt.text = 'All';
+      sel.appendChild(allOpt);
+      // Then each category
+      categoryOptions.filter(c => c !== 'all').forEach(opt => {
         const o = document.createElement('option');
         o.value = opt; o.text = opt.charAt(0).toUpperCase() + opt.slice(1);
         sel.appendChild(o);
       });
       sel.value = categoryField;
-      sel.addEventListener('change', () => {
+      sel.onchange = () => {
         categoryField = sel.value;
         document.getElementById('nearest-coffee').textContent =
-          'Nearest ' + (categoryField.charAt(0).toUpperCase() + categoryField.slice(1));
-      });
-      // Update button label
+          'Nearest ' + (categoryField === 'all'
+            ? 'Location'
+            : categoryField.charAt(0).toUpperCase() + categoryField.slice(1));
+        updateDestinationDropdown();
+      };
+      // Initial label
       document.getElementById('nearest-coffee').textContent =
-        'Nearest ' + (categoryField.charAt(0).toUpperCase() + categoryField.slice(1));
+        'Nearest ' + (categoryField === 'all'
+          ? 'Location'
+          : categoryField.charAt(0).toUpperCase() + categoryField.slice(1));
     }
 
     function updateDestinationDropdown() {
       const destSelect = document.getElementById('destination-select');
       destSelect.innerHTML = '';
-      // Favorites first
-      favorites.forEach(i => {
-        const opt = document.createElement('option');
-        opt.value = i;
-        opt.text = locations[i].name + ' ★';
-        destSelect.appendChild(opt);
+      // Compute and collect items to show
+      const items = locations
+        .map((loc, i) => {
+          // Filter by category
+          if (categoryField !== 'all' && !loc[categoryField]) return null;
+          // Compute distance in km if we have lastPosition
+          let distText = lastPosition
+            ? (haversineDistance(lastPosition, loc.coords) / 1000).toFixed(2) + ' km'
+            : '';
+          const isFav = favorites.includes(i);
+          return { index: i, name: loc.name, distText, isFav };
+        })
+        .filter(x => x);
+      // Sort favorites first
+      items.sort((a, b) => {
+        if (a.isFav && !b.isFav) return -1;
+        if (!a.isFav && b.isFav) return 1;
+        return a.name.localeCompare(b.name);
       });
-      // Then non-favorites
-      locations.forEach((loc, i) => {
-        if (!favorites.includes(i)) {
-          const opt = document.createElement('option');
-          opt.value = i;
-          opt.text = loc.name;
-          destSelect.appendChild(opt);
-        }
+      // Populate
+      items.forEach(item => {
+        const opt = document.createElement('option');
+        opt.value = item.index;
+        opt.text = item.name + (item.isFav ? ' ★' : '') +
+                   (item.distText ? ' (' + item.distText + ')' : '');
+        destSelect.appendChild(opt);
       });
     }
 
