@@ -195,7 +195,20 @@
       }).addTo(map);
 
       routingControl.on('routesfound', e => {
-        const totalSec = e.routes[0].summary.totalTime;
+        // Determine time based on mode
+        const summary = e.routes[0].summary;
+        const mode = document.getElementById('mode').value;
+        let totalSec;
+        if (mode === 'foot') {
+          // Walking: average ~5 km/h => 1.3889 m/s
+          totalSec = summary.totalDistance / 1.3889;
+        } else if (mode === 'bike') {
+          // Cycling: average ~15 km/h => 4.1667 m/s
+          totalSec = summary.totalDistance / 4.1667;
+        } else {
+          // Driving: use OSRM time
+          totalSec = summary.totalTime;
+        }
         const hours = Math.floor(totalSec / 3600);
         const minutes = Math.floor((totalSec % 3600) / 60);
         const seconds = Math.floor(totalSec % 60);
