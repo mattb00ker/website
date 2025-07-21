@@ -91,6 +91,7 @@
       <option value="bike">Cycling</option>
     </select><br>
     <div id="time-estimate" style="margin-top:8px;">ETA: --</div>
+    <div id="distance-info" style="margin-top:8px;"></div>
     <br>
     <label for="category-select">Category:</label>
     <select id="category-select"></select><br>
@@ -323,9 +324,16 @@
       items.forEach(item => {
         const opt = document.createElement('option');
         opt.value = item.index;
-        opt.text = item.name + (item.isFav ? ' ★' : '') +
-                   (item.distText ? ' (' + item.distText + ')' : '');
+        opt.text = item.name + (item.isFav ? ' ★' : '');
         destSelect.appendChild(opt);
+      });
+      // Populate distance list below ETA
+      const distanceDiv = document.getElementById('distance-info');
+      distanceDiv.innerHTML = '';
+      items.forEach(item => {
+        const p = document.createElement('p');
+        p.textContent = `${item.name}: ${item.distText}`;
+        distanceDiv.appendChild(p);
       });
     }
 
