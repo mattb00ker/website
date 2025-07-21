@@ -92,7 +92,9 @@
     </select><br>
     <div id="time-estimate" style="margin-top:8px;">ETA: --</div>
     <br>
-    <button id="nearest-coffee">Nearest Cafe</button><br>
+    <label for="category-select">Category:</label>
+    <select id="category-select"></select><br>
+    <button id="nearest-coffee">Nearest Coffee Shop</button><br>
     <label for="favorite-select">Favorites:</label>
     <select id="favorite-select"><option value="">Select favorite</option></select><br>
   </div>
@@ -105,6 +107,8 @@
     let locations = [];
     let markers = [];
     let favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+    let categoryField = '';
+    let categoryOptions = [];
 
     document.getElementById('file-input').addEventListener('change', e => {
       const file = e.target.files[0]; if (!file) return;
@@ -115,8 +119,22 @@
             name: r.name,
             coords: [parseFloat(r.lat), parseFloat(r.lng)],
             website: r.website,
-            coffeeshop: r.coffeeshop && r.coffeeshop.toLowerCase() === 'y'
+            coffeeshop: r.coffeeshop && r.coffeeshop.toLowerCase() === 'y',
+            // parse other boolean fields as booleans
+            ...Object.fromEntries(Object.entries(r).map(([k,v]) => {
+              if (['name','lat','lng','website','coffeeshop'].includes(k)) return [];
+              return [k, v.toLowerCase() === 'y'];
+            }))
           }));
+          // Determine which fields are boolean flags (y/n)
+          categoryOptions = Object.keys(locations[0]).filter(
+            key => ['name','coords','website','coffeeshop'].indexOf(key) === -1 && typeof locations[0][key] === 'boolean'
+          );
+          // Always include 'coffeeshop' if present
+          if ('coffeeshop' in locations[0]) categoryOptions.unshift('coffeeshop');
+          categoryField = categoryOptions[0] || '';
+          populateCategorySelect();
+
           document.getElementById('upload-panel').style.display = 'none';
           document.getElementById('map').style.display = 'block';
           document.querySelector('.controls').style.display = 'block';
@@ -153,23 +171,18 @@
         markers[i] = marker;
       });
 
-      const destSelect = document.getElementById('destination-select');
-      locations.forEach((loc,i) => {
-        let o = document.createElement('option');
-        o.value = i; o.text = loc.name;
-        destSelect.appendChild(o);
-      });
+      updateDestinationDropdown();
 
       document.getElementById('mode').addEventListener('change', () => {
         if (lastPosition) {
           findRoute({ coords: { latitude: lastPosition[0], longitude: lastPosition[1] } });
         }
       });
-      destSelect.addEventListener('change', () => {
+      document.getElementById('destination-select').addEventListener('change', () => {
         if (lastPosition) {
           findRoute({ coords: { latitude: lastPosition[0], longitude: lastPosition[1] } });
           // Open the marker popup and pan to it
-          const destIndex = destSelect.value;
+          const destIndex = document.getElementById('destination-select').value;
           const destCoords = locations[destIndex].coords;
           map.panTo(destCoords);
           markers[destIndex].openPopup();
@@ -264,6 +277,47 @@
         opt.text = locations[i].name;
         favSelect.appendChild(opt);
       });
+      updateDestinationDropdown();
+    }
+
+    function populateCategorySelect() {
+      const sel = document.getElementById('category-select');
+      sel.innerHTML = '';
+      categoryOptions.forEach(opt => {
+        const o = document.createElement('option');
+        o.value = opt; o.text = opt.charAt(0).toUpperCase() + opt.slice(1);
+        sel.appendChild(o);
+      });
+      sel.value = categoryField;
+      sel.addEventListener('change', () => {
+        categoryField = sel.value;
+        document.getElementById('nearest-coffee').textContent =
+          'Nearest ' + (categoryField.charAt(0).toUpperCase() + categoryField.slice(1));
+      });
+      // Update button label
+      document.getElementById('nearest-coffee').textContent =
+        'Nearest ' + (categoryField.charAt(0).toUpperCase() + categoryField.slice(1));
+    }
+
+    function updateDestinationDropdown() {
+      const destSelect = document.getElementById('destination-select');
+      destSelect.innerHTML = '';
+      // Favorites first
+      favorites.forEach(i => {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.text = locations[i].name + ' ★';
+        destSelect.appendChild(opt);
+      });
+      // Then non-favorites
+      locations.forEach((loc, i) => {
+        if (!favorites.includes(i)) {
+          const opt = document.createElement('option');
+          opt.value = i;
+          opt.text = loc.name;
+          destSelect.appendChild(opt);
+        }
+      });
     }
 
     document.body.addEventListener('click', e => {
@@ -300,12 +354,12 @@
         if (!lastPosition) return alert('Current position not available yet.');
         let nearest = null, minD = Infinity;
         locations.forEach((loc, idx) => {
-          if (loc.coffeeshop) {
+          if (categoryField && loc[categoryField]) {
             const d = haversineDistance(lastPosition, loc.coords);
             if (d < minD) { minD = d; nearest = idx; }
           }
         });
-        if (nearest === null) return alert('No coffee shops found.');
+        if (nearest === null) return alert('No locations found for selected category.');
         const coords = locations[nearest].coords;
         map.panTo(coords);
         markers[nearest].openPopup();
