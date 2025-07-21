@@ -129,7 +129,7 @@
 
   <script>
     // Globals
-    let map, routingControl, lastPosition;
+    let map, routingControl, lastPosition, csvUrl = null;
     let locations = [];
 
     // 1) CSV upload handler
@@ -153,6 +153,9 @@
           document.querySelector('.controls').style.display = 'block';
           document.getElementById('instructions').style.display = 'block';
 
+          // Create a blob URL for the uploaded CSV file so we can link to it
+          csvUrl = URL.createObjectURL(file);
+
           initApp();
         }
       });
@@ -174,7 +177,8 @@
           .bindPopup(
             `<strong>${loc.name}</strong><br>` +
             `<a href="https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=` +
-            `${loc.coords[0]},${loc.coords[1]}" target="_blank">Street View</a>`
+            `${loc.coords[0]},${loc.coords[1]}" target="_blank">Street View</a><br>` +
+            `<a href="${csvUrl}" download="locations.csv">Download CSV</a>`
           );
       });
 
