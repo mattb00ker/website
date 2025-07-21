@@ -99,6 +99,7 @@
   <script>
     let map, routingControl, lastPosition, csvUrl = null;
     let locations = [];
+    let markers = [];
 
     document.getElementById('file-input').addEventListener('change', e => {
       const file = e.target.files[0]; if (!file) return;
@@ -126,18 +127,15 @@
         maxZoom: 19, attribution: '© OSM contributors'
       }).addTo(map);
 
-      locations.forEach(loc => {
-        L.marker(loc.coords).addTo(map).bindPopup(
-          `<strong>${loc.name}</strong><br>` +
-          `<a href="${loc.website}" target="_blank">` +
-            `<img src="https://image.thum.io/get/width/300/${loc.website}" ` +
-                 `alt="Thumbnail of ${loc.name}" ` +
-                 `style="width:100%;height:auto;margin:8px 0;">` +
-          `</a>` +
-          `<a href="${loc.website}" target="_blank">Website</a><br>` +
-          `<a href="https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=` +
-            `${loc.coords[0]},${loc.coords[1]}" target="_blank">Street View</a>`
-        );
+      locations.forEach((loc, i) => {
+        const marker = L.marker(loc.coords)
+          .addTo(map)
+          .bindPopup(
+            `<strong>${loc.name}</strong><br>` +
+            `<a href="${loc.website}" target="_blank">Website</a><br>` +
+            `<a href="https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${loc.coords[0]},${loc.coords[1]}" target="_blank">Street View</a>`
+          );
+        markers[i] = marker;
       });
 
       const destSelect = document.getElementById('destination-select');
@@ -155,6 +153,11 @@
       destSelect.addEventListener('change', () => {
         if (lastPosition) {
           findRoute({ coords: { latitude: lastPosition[0], longitude: lastPosition[1] } });
+          // Open the marker popup and pan to it
+          const destIndex = destSelect.value;
+          const destCoords = locations[destIndex].coords;
+          map.panTo(destCoords);
+          markers[destIndex].openPopup();
         }
       });
 
@@ -164,6 +167,11 @@
           if (!lastPosition || haversineDistance(lastPosition, np) > 10) {
             lastPosition = np;
             findRoute(p);
+            // When first route is drawn, open the selected marker popup
+            const initialIndex = document.getElementById('destination-select').value;
+            const initialCoords = locations[initialIndex].coords;
+            map.panTo(initialCoords);
+            markers[initialIndex].openPopup();
           }
         }, err => alert(err.message), {
           enableHighAccuracy: true, maximumAge: 0, timeout: 10000
