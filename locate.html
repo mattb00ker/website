@@ -176,10 +176,14 @@
       });
 
       document.getElementById('mode').addEventListener('change', () => {
-        if (lastPosition) findRoute(lastPosition);
+        if (lastPosition) {
+          findRoute({ coords: { latitude: lastPosition[0], longitude: lastPosition[1] } });
+        }
       });
       destSelect.addEventListener('change', () => {
-        if (lastPosition) findRoute(lastPosition);
+        if (lastPosition) {
+          findRoute({ coords: { latitude: lastPosition[0], longitude: lastPosition[1] } });
+        }
       });
 
       if (navigator.geolocation) {
