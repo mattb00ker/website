@@ -207,7 +207,6 @@
       } else {
         alert('Geolocation not supported.');
       }
-      updateFavoritesDropdown();
     }
 
     function haversineDistance([a1,a2], [b1,b2]) {
@@ -266,18 +265,6 @@
       });
     }
 
-    function updateFavoritesDropdown() {
-      const favSelect = document.getElementById('favorite-select');
-      favSelect.innerHTML = '<option value="">Select favorite</option>';
-      favorites.forEach(i => {
-        const opt = document.createElement('option');
-        opt.value = i;
-        opt.text = locations[i].name;
-        favSelect.appendChild(opt);
-      });
-      updateDestinationDropdown();
-    }
-
     function populateCategorySelect() {
       const sel = document.getElementById('category-select');
       sel.innerHTML = '';
@@ -326,26 +313,12 @@
         else if (favorites.length < 10) favorites.push(i);
         else return alert('Maximum of 10 favorites reached.');
         localStorage.setItem('favorites', JSON.stringify(favorites));
-        updateFavoritesDropdown();
+        updateDestinationDropdown();
         e.target.textContent = favorites.includes(i)
           ? 'Remove from Favorites'
           : 'Add to Favorites';
       }
     });
-
-    document.getElementById('favorite-select')
-      .addEventListener('change', function() {
-        const i = parseInt(this.value);
-        if (!isNaN(i)) {
-          const coords = locations[i].coords;
-          map.panTo(coords);
-          markers[i].openPopup();
-          markers[i].bringToFront();
-          if (lastPosition) {
-            findRoute({coords:{latitude:lastPosition[0], longitude:lastPosition[1]}});
-          }
-        }
-      });
 
     document.getElementById('nearest-coffee')
       .addEventListener('click', () => {
