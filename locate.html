@@ -13,7 +13,7 @@
   <script src="https://unpkg.com/papaparse@5.3.2/papaparse.min.js"></script>
 
   <style>
-    /* Desktop: map 75% left, instructions 25% right */
+    /* Desktop: map 75% left, directions 25% right */
     @media (min-width: 768px) {
       #map {
         display: none;
@@ -25,15 +25,9 @@
         position: absolute;
         top: 0; bottom: 0; right: 0;
         width: 25%;
-        background: #fff;
-        overflow-y: auto;
-        padding: 8px;
-        box-shadow: -2px 0 5px rgba(0,0,0,0.1);
-        font-family: sans-serif;
-        z-index: 1001;
       }
     }
-    /* Mobile: map top 2/3, instructions bottom 1/3 */
+    /* Mobile: map top 2/3, directions bottom 1/3 */
     @media (max-width: 767px) {
       #map {
         display: none;
@@ -45,27 +39,26 @@
         position: absolute;
         bottom: 0; left: 0; right: 0;
         height: 33%; width: 100%;
-        background: #fff;
-        overflow-y: auto;
-        padding: 8px;
-        box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
-        font-family: sans-serif;
-        z-index: 1001;
       }
     }
-    /* Controls: destination, mode, ETA */
+    /* Common styles */
+    #map, #instructions {
+      background: #fafafa;
+      overflow: auto;
+      padding: 8px;
+      box-shadow: inset 0 0 5px rgba(0,0,0,0.1);
+    }
     .controls {
       position: absolute;
       display: none;
       top: 10px; left: 10px;
-      z-index: 1002;
       background: white;
-      padding: 8px 12px;
+      padding: 8px;
       border-radius: 4px;
-      box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+      box-shadow: 0 1px 5px rgba(0,0,0,0.3);
       font-family: sans-serif;
+      z-index: 1002;
     }
-    /* CSV upload panel */
     #upload-panel {
       position: absolute;
       top: 50%; left: 50%;
@@ -73,62 +66,50 @@
       background: white;
       padding: 20px;
       border-radius: 4px;
-      box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+      box-shadow: 0 1px 5px rgba(0,0,0,0.3);
       text-align: center;
+      font-family: sans-serif;
       z-index: 1003;
     }
   </style>
 </head>
 <body>
-  <!-- CSV uploader -->
   <div id="upload-panel">
     <h3>Load locations CSV</h3>
     <input type="file" id="file-input" accept=".csv" />
   </div>
 
-  <!-- Map -->
   <div id="map"></div>
-
-  <!-- Directions pane -->
   <div id="instructions"></div>
-
-  <!-- Controls -->
   <div class="controls">
     <label for="destination-select">Destination:</label>
     <select id="destination-select"></select><br>
-    <label for="mode">Transport mode:</label>
+    <label for="mode">Mode:</label>
     <select id="mode">
-      <option value="car">Driving</option>
       <option value="foot">Walking</option>
+      <option value="car">Driving</option>
       <option value="bike">Cycling</option>
     </select><br>
-    <div id="time-estimate" style="margin-top:8px;">Estimated time: --</div>
+    <div id="time-estimate" style="margin-top:8px;">ETA: --</div>
   </div>
 
-  <!-- Dependencies -->
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
 
   <script>
-    // Globals
     let map, routingControl, lastPosition, csvUrl = null;
     let locations = [];
 
-    // Handle CSV upload (expecting columns: name,lat,lng,website)
     document.getElementById('file-input').addEventListener('change', e => {
-      const file = e.target.files[0];
-      if (!file) return;
+      const file = e.target.files[0]; if (!file) return;
       Papa.parse(file, {
-        header: true,
-        skipEmptyLines: true,
+        header: true, skipEmptyLines: true,
         complete: results => {
-          // Build locations array including website
           locations = results.data.map(r => ({
             name: r.name,
             coords: [parseFloat(r.lat), parseFloat(r.lng)],
             website: r.website
           }));
-          // Show UI
           document.getElementById('upload-panel').style.display = 'none';
           document.getElementById('map').style.display = 'block';
           document.querySelector('.controls').style.display = 'block';
@@ -141,55 +122,90 @@
 
     function initApp() {
       map = L.map('map').setView([0,0],2);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap contributors'}).addTo(map);
-      // Markers with website, Street View & CSV link
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19, attribution: '© OSM contributors'
+      }).addTo(map);
+
       locations.forEach(loc => {
         L.marker(loc.coords).addTo(map).bindPopup(
           `<strong>${loc.name}</strong><br>` +
           `<a href="${loc.website}" target="_blank">Website</a><br>` +
-          `<a href="https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${loc.coords[0]},${loc.coords[1]}" target="_blank">Street View</a><br>` +
-          `<a href="${csvUrl}" download="locations.csv">Download CSV</a>`
+          `<a href="https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=` +
+          `${loc.coords[0]},${loc.coords[1]}" target="_blank">Street View</a><br>` +
+          `<a href="${csvUrl}" download>Download CSV</a>`
         );
       });
-      // Populate destination dropdown
+
       const destSelect = document.getElementById('destination-select');
-      locations.forEach((loc,i)=>{
-        const opt=document.createElement('option');opt.value=i;opt.text=loc.name;
-        destSelect.appendChild(opt);
+      locations.forEach((loc,i) => {
+        let o = document.createElement('option');
+        o.value = i; o.text = loc.name;
+        destSelect.appendChild(o);
       });
-      document.getElementById('mode').value='foot';
-      destSelect.addEventListener('change',()=>{if(lastPosition) findRoute({coords:{latitude:lastPosition[0],longitude:lastPosition[1]}});});
-      document.getElementById('mode').addEventListener('change',()=>{if(lastPosition) findRoute({coords:{latitude:lastPosition[0],longitude:lastPosition[1]}});});
-      // Geolocation
-      if(navigator.geolocation){
-        navigator.geolocation.watchPosition(pos=>{
-          const newPos=[pos.coords.latitude,pos.coords.longitude];
-          if(!lastPosition||haversineDistance(lastPosition,newPos)>10){lastPosition=newPos;findRoute(pos);}
-        },err=>alert('Unable to get location: '+err.message),{enableHighAccuracy:true,maximumAge:0,timeout:10000});
-      } else alert('Geolocation not supported.');
+
+      document.getElementById('mode').addEventListener('change', () => {
+        if (lastPosition) findRoute(lastPosition);
+      });
+      destSelect.addEventListener('change', () => {
+        if (lastPosition) findRoute(lastPosition);
+      });
+
+      if (navigator.geolocation) {
+        navigator.geolocation.watchPosition(p => {
+          const np = [p.coords.latitude, p.coords.longitude];
+          if (!lastPosition || haversineDistance(lastPosition, np) > 10) {
+            lastPosition = np;
+            findRoute(p);
+          }
+        }, err => alert(err.message), {
+          enableHighAccuracy: true, maximumAge: 0, timeout: 10000
+        });
+      } else {
+        alert('Geolocation not supported.');
+      }
     }
 
-    function haversineDistance([lat1,lon1],[lat2,lon2]){
-      const R=6371e3,toRad=d=>d*Math.PI/180;
-      const φ1=toRad(lat1),φ2=toRad(lat2),Δφ=toRad(lat2-lat1),Δλ=toRad(lon2-lon1);
-      const a=Math.sin(Δφ/2)**2+Math.cos(φ1)*Math.cos(φ2)*Math.sin(Δλ/2)**2;
-      return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+    function haversineDistance([a1,a2], [b1,b2]) {
+      const R = 6371e3, t = d => d * Math.PI / 180;
+      const φ1 = t(a1), φ2 = t(b1), Δφ = t(b1 - a1), Δλ = t(b2 - a2);
+      const a = Math.sin(Δφ/2)**2 + Math.cos(φ1)*Math.cos(φ2)*Math.sin(Δλ/2)**2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     }
 
-    function findRoute(position){
-      const user=[position.coords.latitude,position.coords.longitude];
-      const destIdx=document.getElementById('destination-select').value;const dest=locations[destIdx].coords;
-      if(routingControl) map.removeControl(routingControl);
-      routingControl=L.Routing.control({waypoints:[L.latLng(...user),L.latLng(...dest)],router:L.Routing.osrmv1({serviceUrl:'https://router.project-osrm.org/route/v1',profile:document.getElementById('mode').value}),fitSelectedRoutes:true,addWaypoints:false,show:false}).addTo(map);
-      routingControl.on('routesfound',e=>{
-        const sec=e.routes[0].summary.totalTime;const mins=Math.round(sec/60),h=Math.floor(mins/60),m=mins%60;
-        document.getElementById('time-estimate').textContent='Estimated time: '+(h>0?`${h}h ${m}m`:``${m}m``);
-        const instr=document.getElementById('instructions');instr.innerHTML='<h4>Directions:</h4>';const ol=document.createElement('ol');e.routes[0].instructions.forEach(i=>{const li=document.createElement('li');li.textContent=i.text;ol.appendChild(li);});instr.appendChild(ol);
+    function findRoute(position) {
+      const userCoords = [position.coords.latitude, position.coords.longitude];
+      const di = document.getElementById('destination-select').value;
+      const destCoords = locations[di].coords;
+      if (routingControl) map.removeControl(routingControl);
+      routingControl = L.Routing.control({
+        waypoints: [L.latLng(...userCoords), L.latLng(...destCoords)],
+        router: L.Routing.osrmv1({
+          serviceUrl: 'https://router.project-osrm.org/route/v1',
+          profile: document.getElementById('mode').value
+        }),
+        fitSelectedRoutes: true, addWaypoints: false, show: false
+      }).addTo(map);
+
+      routingControl.on('routesfound', e => {
+        const sec = e.routes[0].summary.totalTime;
+        const mins = Math.round(sec/60), h = Math.floor(mins/60), m = mins % 60;
+        document.getElementById('time-estimate').textContent =
+          'ETA: ' + (h>0 ? `${h}h ${m}m` : `${m}m`);
+        const ins = document.getElementById('instructions');
+        ins.innerHTML = '<h4>Directions</h4>';
+        const ol = document.createElement('ol');
+        e.routes[0].instructions.forEach(i => {
+          const li = document.createElement('li');
+          li.textContent = i.text;
+          ol.appendChild(li);
+        });
+        ins.appendChild(ol);
       });
     }
 
-    // Service worker
-    if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js');}
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js');
+    }
   </script>
 </body>
 </html>
