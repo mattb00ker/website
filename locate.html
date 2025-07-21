@@ -172,6 +172,7 @@
       });
 
       updateDestinationDropdown();
+      updateDistanceInfo();
 
       document.getElementById('mode').addEventListener('change', () => {
         if (lastPosition) {
@@ -326,10 +327,11 @@
       items.forEach(item => {
         const opt = document.createElement('option');
         opt.value = item.index;
-        opt.text = item.name + (item.isFav ? ' ★' : '') +
-                   (item.distText ? ' (' + item.distText + ')' : '');
+        opt.text = item.name + (item.isFav ? ' ★' : '');
         destSelect.appendChild(opt);
       });
+      // Update distance display for currently selected destination
+      updateDistanceInfo();
     }
 
     function updateDistanceInfo() {
