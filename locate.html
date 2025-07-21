@@ -91,6 +91,7 @@
       <option value="bike">Cycling</option>
     </select><br>
     <div id="time-estimate" style="margin-top:8px;">ETA: --</div>
+    <div id="distance-info"></div>
     <br>
     <label for="category-select">Category:</label>
     <select id="category-select"></select><br>
@@ -186,6 +187,7 @@
           map.panTo(destCoords);
           markers[destIndex].openPopup();
           markers[destIndex].bringToFront();
+          updateDistanceInfo();
         }
       });
 
@@ -202,6 +204,7 @@
             markers[initialIndex].openPopup();
             markers[initialIndex].bringToFront();
             updateDestinationDropdown();
+            updateDistanceInfo();
           }
         }, err => alert(err.message), {
           enableHighAccuracy: true, maximumAge: 0, timeout: 10000
@@ -327,6 +330,18 @@
                    (item.distText ? ' (' + item.distText + ')' : '');
         destSelect.appendChild(opt);
       });
+    }
+
+    function updateDistanceInfo() {
+      const sel = document.getElementById('destination-select');
+      const i = parseInt(sel.value);
+      const distanceDiv = document.getElementById('distance-info');
+      if (lastPosition && !isNaN(i)) {
+        const distText = (haversineDistance(lastPosition, locations[i].coords) / 1000).toFixed(2) + ' km';
+        distanceDiv.textContent = 'Distance: ' + distText;
+      } else {
+        distanceDiv.textContent = '';
+      }
     }
 
     document.body.addEventListener('click', e => {
