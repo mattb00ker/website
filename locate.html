@@ -95,7 +95,7 @@
     <br>
     <label for="category-select">Category:</label>
     <select id="category-select"></select><br>
-    <button id="nearest-coffee">Nearest Coffee Shop</button><br>
+    <button id="nearest-btn">Nearest</button><br>
   </div>
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -118,19 +118,16 @@
             name: r.name,
             coords: [parseFloat(r.lat), parseFloat(r.lng)],
             website: r.website,
-            coffeeshop: r.coffeeshop && r.coffeeshop.toLowerCase() === 'y',
             // parse other boolean fields as booleans
             ...Object.fromEntries(Object.entries(r).map(([k,v]) => {
-              if (['name','lat','lng','website','coffeeshop'].includes(k)) return [];
+              if (['name','lat','lng','website'].includes(k)) return [];
               return [k, v.toLowerCase() === 'y'];
             }))
           }));
           // Determine which fields are boolean flags (y/n)
           categoryOptions = Object.keys(locations[0]).filter(
-            key => ['name','coords','website','coffeeshop'].indexOf(key) === -1 && typeof locations[0][key] === 'boolean'
+            key => ['name','coords','website'].indexOf(key) === -1 && typeof locations[0][key] === 'boolean'
           );
-          // Always include 'coffeeshop' if present
-          if ('coffeeshop' in locations[0]) categoryOptions.unshift('coffeeshop');
           categoryOptions.unshift('all');
           categoryField = categoryOptions[0] || '';
           populateCategorySelect();
@@ -290,7 +287,7 @@
       sel.value = categoryField;
       sel.onchange = () => {
         categoryField = sel.value;
-        document.getElementById('nearest-coffee').textContent =
+        document.getElementById('nearest-btn').textContent =
           'Nearest ' + (categoryField === 'all'
             ? 'Location'
             : categoryField.charAt(0).toUpperCase() + categoryField.slice(1));
@@ -298,7 +295,7 @@
         updateDistanceInfo();
       };
       // Initial label
-      document.getElementById('nearest-coffee').textContent =
+      document.getElementById('nearest-btn').textContent =
         'Nearest ' + (categoryField === 'all'
           ? 'Location'
           : categoryField.charAt(0).toUpperCase() + categoryField.slice(1));
@@ -365,7 +362,7 @@
       }
     });
 
-    document.getElementById('nearest-coffee')
+    document.getElementById('nearest-btn')
       .addEventListener('click', () => {
         if (!lastPosition) return alert('Current position not available yet.');
         let nearest = null, minD = Infinity;
