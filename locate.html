@@ -109,6 +109,35 @@
     let categoryField = '';
     let categoryOptions = [];
 
+    // Assign a distinct color to each category (excluding 'all')
+    const _markerColors = ['red','blue','green','orange','yellow','violet','grey','black'];
+    const categoryColors = {};
+    const categoryIcons = {};
+    let defaultIcon;
+
+    function initCategoryIcons() {
+      // Map categories to colors in order
+      categoryOptions.filter(c => c !== 'all').forEach((cat, idx) => {
+        categoryColors[cat] = _markerColors[idx % _markerColors.length];
+      });
+      // Create Leaflet icons for each category
+      Object.entries(categoryColors).forEach(([cat, color]) => {
+        categoryIcons[cat] = new L.Icon({
+          iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-${color}.png`,
+          shadowUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-shadow.png',
+          iconSize: [25, 41], iconAnchor: [12, 41],
+          popupAnchor: [1, -34], shadowSize: [41, 41]
+        });
+      });
+      // Default to a neutral color if no category matches
+      defaultIcon = new L.Icon({
+        iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-grey.png`,
+        shadowUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-shadow.png',
+        iconSize: [25, 41], iconAnchor: [12, 41],
+        popupAnchor: [1, -34], shadowSize: [41, 41]
+      });
+    }
+
     document.getElementById('file-input').addEventListener('change', e => {
       const file = e.target.files[0]; if (!file) return;
       Papa.parse(file, {
@@ -130,6 +159,7 @@
           );
           categoryOptions.unshift('all');
           categoryField = categoryOptions[0] || '';
+          initCategoryIcons();
           populateCategorySelect();
 
           document.getElementById('upload-panel').style.display = 'none';
@@ -149,7 +179,16 @@
       }).addTo(map);
 
       locations.forEach((loc, i) => {
-        const marker = L.marker(loc.coords, { zIndexOffset: 1000 })
+        // Pick the first matching category icon, or default
+        let icon = defaultIcon;
+        for (const cat of categoryOptions) {
+          if (cat === 'all') continue;
+          if (loc[cat] && categoryIcons[cat]) {
+            icon = categoryIcons[cat];
+            break;
+          }
+        }
+        const marker = L.marker(loc.coords, { icon: icon, zIndexOffset: 1000 })
           .addTo(map)
           .bindPopup(
             `<strong>${loc.name}</strong><br>` +
