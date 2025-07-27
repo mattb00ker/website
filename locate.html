@@ -207,6 +207,7 @@ function initCategoryIcons() {
 
       updateDestinationDropdown();
       updateDistanceInfo();
+      updateMarkers();
 
       document.getElementById('mode').addEventListener('change', () => {
         if (lastPosition) {
@@ -330,6 +331,7 @@ function initCategoryIcons() {
             : categoryField.charAt(0).toUpperCase() + categoryField.slice(1));
         updateDestinationDropdown();
         updateDistanceInfo();
+        updateMarkers();
       };
       // Initial label
       document.getElementById('nearest-btn').textContent =
@@ -382,6 +384,18 @@ function initCategoryIcons() {
       // else {
       //   distanceDiv.textContent = '';
       // }
+    }
+
+    // Show or hide markers based on the chosen category
+    function updateMarkers() {
+      locations.forEach((loc, i) => {
+        const visible = (categoryField === 'all' || loc[categoryField]);
+        if (visible) {
+          if (!map.hasLayer(markers[i])) map.addLayer(markers[i]);
+        } else {
+          if (map.hasLayer(markers[i])) map.removeLayer(markers[i]);
+        }
+      });
     }
 
     document.body.addEventListener('click', e => {
