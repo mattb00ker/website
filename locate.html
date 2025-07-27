@@ -106,37 +106,35 @@
     let locations = [];
     let markers = [];
     let favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
-    let categoryField = '';
-    let categoryOptions = [];
-
-    // Assign a distinct color to each category (excluding 'all')
-    const _markerColors = ['red','blue','green','orange','yellow','violet','grey','black'];
-    const categoryColors = {};
-    const categoryIcons = {};
-    let defaultIcon;
-
-    function initCategoryIcons() {
-      // Map categories to colors in order
-      categoryOptions.filter(c => c !== 'all').forEach((cat, idx) => {
-        categoryColors[cat] = _markerColors[idx % _markerColors.length];
-      });
-      // Create Leaflet icons for each category
-      Object.entries(categoryColors).forEach(([cat, color]) => {
-        categoryIcons[cat] = new L.Icon({
-          iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-${color}.png`,
-          shadowUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-shadow.png',
-          iconSize: [25, 41], iconAnchor: [12, 41],
-          popupAnchor: [1, -34], shadowSize: [41, 41]
-        });
-      });
-      // Default to a neutral color if no category matches
-      defaultIcon = new L.Icon({
-        iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-grey.png`,
-        shadowUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-shadow.png',
-        iconSize: [25, 41], iconAnchor: [12, 41],
-        popupAnchor: [1, -34], shadowSize: [41, 41]
-      });
-    }
+let categoryField = '';
+let categoryOptions = [];
+// Color/icon setup
+const _markerColors = ['red','blue','green','orange','yellow','violet','grey','black'];
+const categoryColors = {};
+const categoryIcons = {};
+let defaultIcon;
+function initCategoryIcons() {
+  // Assign each category (except 'all') a unique color
+  categoryOptions.filter(c => c !== 'all').forEach((cat, idx) => {
+    categoryColors[cat] = _markerColors[idx % _markerColors.length];
+  });
+  // Create icons
+  Object.entries(categoryColors).forEach(([cat, color]) => {
+    categoryIcons[cat] = new L.Icon({
+      iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-${color}.png`,
+      shadowUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-shadow.png',
+      iconSize: [25, 41], iconAnchor: [12, 41],
+      popupAnchor: [1, -34], shadowSize: [41, 41]
+    });
+  });
+  // Fallback icon
+  defaultIcon = new L.Icon({
+    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-grey.png',
+    shadowUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-shadow.png',
+    iconSize: [25, 41], iconAnchor: [12, 41],
+    popupAnchor: [1, -34], shadowSize: [41, 41]
+  });
+}
 
     document.getElementById('file-input').addEventListener('change', e => {
       const file = e.target.files[0]; if (!file) return;
@@ -179,7 +177,7 @@
       }).addTo(map);
 
       locations.forEach((loc, i) => {
-        // Pick the first matching category icon, or default
+        // Choose icon based on first matching category
         let icon = defaultIcon;
         for (const cat of categoryOptions) {
           if (cat === 'all') continue;
