@@ -99,7 +99,7 @@
   <div id="instructions"></div>
   <div id="ui-toggles">
     <button id="toggle-controls">Hide controls</button><br>
-    <button id="toggle-directions">Hide directions</button>
+    <button id="toggle-directions">Show directions</button>
   </div>
   <div class="controls">
     <label for="destination-select">Destination:</label>
@@ -188,8 +188,17 @@ function initCategoryIcons() {
           document.getElementById('upload-panel').style.display = 'none';
           document.getElementById('map').style.display = 'block';
           document.querySelector('.controls').style.display = 'block';
-          document.getElementById('instructions').style.display = 'block';
+          // Start with directions hidden by default
+          document.getElementById('instructions').style.display = 'none';
           document.getElementById('ui-toggles').style.display = 'block';
+
+          // Ensure the map uses the full available space when directions are hidden
+          const mapDiv = document.getElementById('map');
+          mapDiv.style.right = '0';
+          mapDiv.style.bottom = '0';
+
+          // Make sure the toggle button label matches the initial state
+          document.getElementById('toggle-directions').textContent = 'Show directions';
           csvUrl = URL.createObjectURL(file);
           initApp();
         }
