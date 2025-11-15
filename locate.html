@@ -276,12 +276,14 @@ function initCategoryIcons() {
       }
     }
 
-    function haversineDistance([a1,a2], [b1,b2]) {
-      const R = 6371e3, t = d => d * Math.PI / 180;
-      const φ1 = t(a1), φ2 = t(b1), Δφ = t(b1 - a1), Δλ = t(b2 - a2);
-      const a = Math.sin(Δφ/2)**2 + Math.cos(φ1)*Math.cos(φ2)*Math.sin(Δλ/2)**2;
-      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    }
+// If we're within this radius (in meters) of a location, treat it as "already here"
+const VISITED_RADIUS_METERS = 50;
+function haversineDistance([a1,a2], [b1,b2]) {
+  const R = 6371e3, t = d => d * Math.PI / 180;
+  const φ1 = t(a1), φ2 = t(b1), Δφ = t(b1 - a1), Δλ = t(b2 - a2);
+  const a = Math.sin(Δφ/2)**2 + Math.cos(φ1)*Math.cos(φ2)*Math.sin(Δλ/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
 
     function findRoute(position) {
       const userCoords = [position.coords.latitude, position.coords.longitude];
@@ -464,30 +466,45 @@ function initCategoryIcons() {
       }
     });
 
-    document.getElementById('nearest-btn')
-      .addEventListener('click', () => {
-        if (!lastPosition) return alert('Current position not available yet.');
-        let nearest = null, minD = Infinity;
-        locations.forEach((loc, idx) => {
-          let include = false;
-          if (categoryField === 'all') {
-            include = true;
-          } else if (categoryField === 'favourites') {
-            include = favorites.includes(idx);
-          } else if (loc[categoryField]) {
-            include = true;
-          }
-          if (include) {
-            const d = haversineDistance(lastPosition, loc.coords);
-            if (d < minD) { minD = d; nearest = idx; }
-          }
-        });
-        if (nearest === null) return alert('No locations found for selected category.');
-        // Select this location in the dropdown
-        const destSelect = document.getElementById('destination-select');
-        destSelect.value = nearest;
-        destSelect.dispatchEvent(new Event('change'));
-      });
+document.getElementById('nearest-btn')
+  .addEventListener('click', () => {
+    if (!lastPosition) return alert('Current position not available yet.');
+    let nearestOutsideRadius = null, minOutside = Infinity;
+    let nearestAny = null, minAny = Infinity;
+
+    locations.forEach((loc, idx) => {
+      let include = false;
+      if (categoryField === 'all') {
+        include = true;
+      } else if (categoryField === 'favourites') {
+        include = favorites.includes(idx);
+      } else if (loc[categoryField]) {
+        include = true;
+      }
+      if (include) {
+        const d = haversineDistance(lastPosition, loc.coords);
+        // Track absolute nearest (for fallback)
+        if (d < minAny) {
+          minAny = d;
+          nearestAny = idx;
+        }
+        // Track nearest that isn't effectively "where we already are"
+        if (d > VISITED_RADIUS_METERS && d < minOutside) {
+          minOutside = d;
+          nearestOutsideRadius = idx;
+        }
+      }
+    });
+
+    // Prefer the nearest location that is not essentially the one we're standing at.
+    const chosenIndex = (nearestOutsideRadius !== null) ? nearestOutsideRadius : nearestAny;
+    if (chosenIndex === null) return alert('No locations found for selected category.');
+
+    // Select this location in the dropdown
+    const destSelect = document.getElementById('destination-select');
+    destSelect.value = chosenIndex;
+    destSelect.dispatchEvent(new Event('change'));
+  });
 
     // Toggle visibility of controls panel
     document.getElementById('toggle-controls').addEventListener('click', () => {
