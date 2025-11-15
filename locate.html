@@ -469,9 +469,33 @@ function initCategoryIcons() {
     document.getElementById('toggle-directions').addEventListener('click', () => {
       directionsVisible = !directionsVisible;
       const directionsDiv = document.getElementById('instructions');
-      directionsDiv.style.display = directionsVisible ? 'block' : 'none';
-      document.getElementById('toggle-directions').textContent = directionsVisible ? 'Hide directions' : 'Show directions';
+      const mapDiv = document.getElementById('map');
+
+      if (directionsVisible) {
+        // Show directions panel
+        directionsDiv.style.display = 'block';
+        document.getElementById('toggle-directions').textContent = 'Hide directions';
+        // Restore split layout depending on viewport size
+        if (window.innerWidth >= 768) {
+          // Desktop: map 75% left, directions 25% right
+          mapDiv.style.right = '25%';
+          mapDiv.style.bottom = '0';
+        } else {
+          // Mobile: map top 2/3, directions bottom 1/3
+          mapDiv.style.bottom = '33%';
+          mapDiv.style.right = '0';
+        }
+      } else {
+        // Hide directions panel
+        directionsDiv.style.display = 'none';
+        document.getElementById('toggle-directions').textContent = 'Show directions';
+        // Expand map to fill available space
+        mapDiv.style.right = '0';
+        mapDiv.style.bottom = '0';
+      }
+
       if (map) {
+        // Give the layout a moment to settle, then recalculate map size
         setTimeout(() => map.invalidateSize(), 200);
       }
     });
