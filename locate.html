@@ -71,6 +71,22 @@
       font-family: sans-serif;
       z-index: 1003;
     }
+    #ui-toggles {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 1004;
+      display: none;
+      background: white;
+      padding: 6px;
+      border-radius: 4px;
+      box-shadow: 0 1px 5px rgba(0,0,0,0.3);
+      font-family: sans-serif;
+    }
+    #ui-toggles button {
+      margin: 2px 0;
+      width: 120px;
+    }
   </style>
 </head>
 <body>
@@ -81,6 +97,10 @@
 
   <div id="map"></div>
   <div id="instructions"></div>
+  <div id="ui-toggles">
+    <button id="toggle-controls">Hide controls</button><br>
+    <button id="toggle-directions">Hide directions</button>
+  </div>
   <div class="controls">
     <label for="destination-select">Destination:</label>
     <select id="destination-select"></select><br>
@@ -105,6 +125,8 @@
     let map, routingControl, lastPosition, csvUrl = null;
     let locations = [];
     let markers = [];
+    let controlsVisible = true;
+    let directionsVisible = true;
     let favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
 let categoryField = '';
 let categoryOptions = [];
@@ -164,6 +186,7 @@ function initCategoryIcons() {
           document.getElementById('map').style.display = 'block';
           document.querySelector('.controls').style.display = 'block';
           document.getElementById('instructions').style.display = 'block';
+          document.getElementById('ui-toggles').style.display = 'block';
           csvUrl = URL.createObjectURL(file);
           initApp();
         }
@@ -429,6 +452,29 @@ function initCategoryIcons() {
         destSelect.value = nearest;
         destSelect.dispatchEvent(new Event('change'));
       });
+
+    // Toggle visibility of controls panel
+    document.getElementById('toggle-controls').addEventListener('click', () => {
+      controlsVisible = !controlsVisible;
+      const controlsDiv = document.querySelector('.controls');
+      controlsDiv.style.display = controlsVisible ? 'block' : 'none';
+      document.getElementById('toggle-controls').textContent = controlsVisible ? 'Hide controls' : 'Show controls';
+      if (map) {
+        // Give the layout a moment to settle, then recalculate map size
+        setTimeout(() => map.invalidateSize(), 200);
+      }
+    });
+
+    // Toggle visibility of directions panel
+    document.getElementById('toggle-directions').addEventListener('click', () => {
+      directionsVisible = !directionsVisible;
+      const directionsDiv = document.getElementById('instructions');
+      directionsDiv.style.display = directionsVisible ? 'block' : 'none';
+      document.getElementById('toggle-directions').textContent = directionsVisible ? 'Hide directions' : 'Show directions';
+      if (map) {
+        setTimeout(() => map.invalidateSize(), 200);
+      }
+    });
 
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js');
