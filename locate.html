@@ -277,7 +277,7 @@ function initCategoryIcons() {
     }
 
 // If we're within this radius (in meters) of a location, treat it as "already here"
-const VISITED_RADIUS_METERS = 50;
+const VISITED_RADIUS_METERS = 5;
 function haversineDistance([a1,a2], [b1,b2]) {
   const R = 6371e3, t = d => d * Math.PI / 180;
   const φ1 = t(a1), φ2 = t(b1), Δφ = t(b1 - a1), Δλ = t(b2 - a2);
