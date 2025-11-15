@@ -177,8 +177,11 @@ function initCategoryIcons() {
           categoryOptions = Object.keys(locations[0]).filter(
             key => ['name','coords','website'].indexOf(key) === -1 && typeof locations[0][key] === 'boolean'
           );
+          // Add synthetic categories
+          categoryOptions.unshift('favourites');
           categoryOptions.unshift('all');
-          categoryField = categoryOptions[0] || '';
+          // Default to showing all locations
+          categoryField = 'all';
           initCategoryIcons();
           populateCategorySelect();
 
@@ -348,19 +351,31 @@ function initCategoryIcons() {
       sel.value = categoryField;
       sel.onchange = () => {
         categoryField = sel.value;
-        document.getElementById('nearest-btn').textContent =
-          'Nearest ' + (categoryField === 'all'
-            ? 'Location'
-            : categoryField.charAt(0).toUpperCase() + categoryField.slice(1));
+        let label;
+        if (categoryField === 'all') {
+          label = 'Location';
+        } else if (categoryField === 'favourites') {
+          label = 'Favourite';
+        } else {
+          label = categoryField.charAt(0).toUpperCase() + categoryField.slice(1);
+        }
+        document.getElementById('nearest-btn').textContent = 'Nearest ' + label;
         updateDestinationDropdown();
         updateDistanceInfo();
         updateMarkers();
       };
       // Initial label
-      document.getElementById('nearest-btn').textContent =
-        'Nearest ' + (categoryField === 'all'
-          ? 'Location'
-          : categoryField.charAt(0).toUpperCase() + categoryField.slice(1));
+      {
+        let label;
+        if (categoryField === 'all') {
+          label = 'Location';
+        } else if (categoryField === 'favourites') {
+          label = 'Favourite';
+        } else {
+          label = categoryField.charAt(0).toUpperCase() + categoryField.slice(1);
+        }
+        document.getElementById('nearest-btn').textContent = 'Nearest ' + label;
+      }
     }
 
     function updateDestinationDropdown() {
@@ -370,7 +385,13 @@ function initCategoryIcons() {
       const items = locations
         .map((loc, i) => {
           // Filter by category
-          if (categoryField !== 'all' && !loc[categoryField]) return null;
+          if (categoryField === 'all') {
+            // show everything
+          } else if (categoryField === 'favourites') {
+            if (!favorites.includes(i)) return null;
+          } else if (!loc[categoryField]) {
+            return null;
+          }
           // Compute distance in km if we have lastPosition
           let distText = lastPosition
             ? (haversineDistance(lastPosition, loc.coords) / 1000).toFixed(2) + ' km'
@@ -412,7 +433,14 @@ function initCategoryIcons() {
     // Show or hide markers based on the chosen category
     function updateMarkers() {
       locations.forEach((loc, i) => {
-        const visible = (categoryField === 'all' || loc[categoryField]);
+        let visible;
+        if (categoryField === 'all') {
+          visible = true;
+        } else if (categoryField === 'favourites') {
+          visible = favorites.includes(i);
+        } else {
+          visible = !!loc[categoryField];
+        }
         if (visible) {
           if (!map.hasLayer(markers[i])) map.addLayer(markers[i]);
         } else {
@@ -441,7 +469,15 @@ function initCategoryIcons() {
         if (!lastPosition) return alert('Current position not available yet.');
         let nearest = null, minD = Infinity;
         locations.forEach((loc, idx) => {
-          if (categoryField && loc[categoryField]) {
+          let include = false;
+          if (categoryField === 'all') {
+            include = true;
+          } else if (categoryField === 'favourites') {
+            include = favorites.includes(idx);
+          } else if (loc[categoryField]) {
+            include = true;
+          }
+          if (include) {
             const d = haversineDistance(lastPosition, loc.coords);
             if (d < minD) { minD = d; nearest = idx; }
           }
