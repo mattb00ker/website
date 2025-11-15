@@ -231,6 +231,14 @@ function initCategoryIcons() {
         markers[i] = marker;
       });
 
+      // After all markers are created, fit the map view to show all locations
+      if (markers.length > 0) {
+        const group = L.featureGroup(markers);
+        map.fitBounds(group.getBounds(), {
+          padding: [20, 20]
+        });
+      }
+
       updateDestinationDropdown();
       updateDistanceInfo();
       updateMarkers();
