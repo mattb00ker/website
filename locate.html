@@ -304,7 +304,7 @@ function haversineDistance([a1,a2], [b1,b2]) {
           serviceUrl: 'https://router.project-osrm.org/route/v1',
           profile: document.getElementById('mode').value
         }),
-        fitSelectedRoutes: true, addWaypoints: false, show: false
+        fitSelectedRoutes: false, addWaypoints: false, show: false
       }).addTo(map);
 
       routingControl.on('routesfound', e => {
