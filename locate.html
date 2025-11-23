@@ -158,24 +158,53 @@ function initCategoryIcons() {
   });
 }
 
+function renderStars(rating) {
+  const r = Math.max(0, Math.min(5, rating || 0));
+  const full = '★'.repeat(r);
+  const empty = '☆'.repeat(5 - r);
+  return full + empty;
+}
+
     document.getElementById('file-input').addEventListener('change', e => {
       const file = e.target.files[0]; if (!file) return;
       Papa.parse(file, {
         header: true, skipEmptyLines: true,
         complete: results => {
-          locations = results.data.map(r => ({
-            name: r.name,
-            coords: [parseFloat(r.lat), parseFloat(r.lng)],
-            website: r.website,
-            // parse other boolean fields as booleans
-            ...Object.fromEntries(Object.entries(r).map(([k,v]) => {
-              if (['name','lat','lng','website'].includes(k)) return [];
-              return [k, v.toLowerCase() === 'y'];
-            }))
-          }));
-          // Determine which fields are boolean flags (y/n)
+          locations = results.data.map(r => {
+            const obj = {
+              name: r.name,
+              coords: [parseFloat(r.lat), parseFloat(r.lng)],
+              website: r.website,
+              visited: false,
+              rating: 0
+            };
+
+            // Parse visited flag (Y/N)
+            if (typeof r.visited === 'string') {
+              obj.visited = r.visited.trim().toLowerCase() === 'y';
+            }
+
+            // Parse rating as integer 1–5 (anything invalid becomes 0 = no rating)
+            if (r.rating !== undefined && r.rating !== null && r.rating !== '') {
+              const pr = parseInt(r.rating, 10);
+              if (!isNaN(pr)) {
+                obj.rating = Math.max(1, Math.min(5, pr));
+              }
+            }
+
+            // Parse other boolean fields (Y/N) as categories
+            Object.entries(r).forEach(([k, v]) => {
+              if (['name','lat','lng','website','visited','rating'].includes(k)) return;
+              if (typeof v === 'string' && v.trim() !== '') {
+                obj[k] = v.toLowerCase() === 'y';
+              }
+            });
+
+            return obj;
+          });
+          // Determine which fields are boolean flags (y/n) and not special fields
           categoryOptions = Object.keys(locations[0]).filter(
-            key => ['name','coords','website'].indexOf(key) === -1 && typeof locations[0][key] === 'boolean'
+            key => !['name','coords','website','visited','rating'].includes(key) && typeof locations[0][key] === 'boolean'
           );
           // Add synthetic categories
           categoryOptions.unshift('favourites');
@@ -234,7 +263,11 @@ function initCategoryIcons() {
             `<a href="https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${loc.coords[0]},${loc.coords[1]}" target="_blank">Street View</a><br>` +
             `<button class="fav-btn" data-index="${i}">` +
               `${favorites.includes(i) ? 'Remove from Favorites' : 'Add to Favorites'}` +
-            `</button>`
+            `</button>` +
+            `<br>` +
+            `<label><input type="checkbox" class="visited-checkbox" data-index="${i}" ${loc.visited ? 'checked' : ''}> Visited</label><br>` +
+            `<span class="rating-label">Rating: </span>` +
+            `<span class="rating-stars" data-index="${i}" data-rating="${loc.rating}">${renderStars(loc.rating)}</span>`
           )
           .on('click', function() { this.openPopup(); });
         markers[i] = marker;
@@ -480,6 +513,30 @@ function haversineDistance([a1,a2], [b1,b2]) {
         e.target.textContent = favorites.includes(i)
           ? 'Remove from Favorites'
           : 'Add to Favorites';
+      }
+    });
+
+    // Handle visited checkbox changes
+    document.body.addEventListener('change', e => {
+      if (e.target.classList.contains('visited-checkbox')) {
+        const i = parseInt(e.target.getAttribute('data-index'));
+        if (!isNaN(i) && locations[i]) {
+          locations[i].visited = e.target.checked;
+        }
+      }
+    });
+
+    // Handle rating star clicks: cycle rating from 1–5
+    document.body.addEventListener('click', e => {
+      if (e.target.classList.contains('rating-stars')) {
+        const i = parseInt(e.target.getAttribute('data-index'));
+        if (isNaN(i) || !locations[i]) return;
+        let current = locations[i].rating || 0;
+        // Cycle through 1–5
+        current = current >= 5 ? 1 : current + 1;
+        locations[i].rating = current;
+        e.target.setAttribute('data-rating', current);
+        e.target.textContent = renderStars(current);
       }
     });
 
